@@ -1,0 +1,207 @@
+- 프론트엔드 기반의 '풀스택 프레임워크'들의 등장 배경 타임라인 및 이유
+
+   1. client-side rendering (CSG)의 단점부각
+       -> 첫 페이지 진입시 로딩이 상대적으로 엄청 오래 걸림 + 검색엔진의 노출이 좀 많이 어려움
+           -> 웹서비스 트래픽 늘리기가 상대적으로 어렵고, 결국 수입지표적으로 어려움이 많이 생김 
+
+   2. server-side rendering (SSG)의 장점이 다시 주목되고 다시 대세가 변하는 중
+       -> client-side rendering (CSG)의 기능 및 성능향상의 최적화를 위해 알아야 했던, 프론트엔드의 전문성이라고 부르던 것들이 별로 필요함
+          (= server-side rendering (SSG)을 사용하면, 결과적으로 그 딴거 쓸 이유가 사라지고, 상대적으로 프론트엔드 개발의 복잡성이 많이 줄어듬)
+
+   3. NodeJS로 이제는 백엔드 개발도 JS로 가능해진 시대가 되었음
+       -> CSG를 안 쓴다면, 그 CSG에 특화된 복잡한 개발력이 필요없어지니, 그만큼 백엔드를 만질 수 있는것도 중요
+    
+   4. 프론트엔드와 백엔드를 JS를 중심으로 통합된 개발환경을 제공할 수 있다면 엄청 유용할거 같음
+       -> 가장 점유율이 높은 react 기반으로 각종 프론트엔드 기반의 풀스택 프레임워크('렌더링 프레임워크', 'meta 프레임워크'라고 불림)들이 등장하기 시작함
+          (= Next.js 도 그 중 하나)
+
+          ex) GatsBY, nuxt, sveltekit, remix, Next.js
+
+- Next.js
+   : react 라이브러리 기반의 '풀스택 프레임워크'로 이걸로 JS기반으로 화면과 웹서버 전부를 통합적으로 개발 가능하고, 쉽게 서버 및 화면에 대한 설정이나 기능 또한 도입이 가능함
+      -> 웹서버 개발에 대한 수요가 반영 = 상대적으로 client에 많이 역할을 떠넘긴 CSG보단, JS만으로 SSG 기반 웹서비스를 상정하고 개발된 프레임워크
+
+
+    # Next.JS를 배우는게 유리한 이유 + 장점
+       1. GPT의 템플릿 기능이 나날이 발전하고 있기에, 점점 노가다성 개발력은 사라져가고 낮은 수준의 업무 장벽은 많이 줄어든 상태니, 개발자로서 풀스택적으로 범용성이 넓어 나쁠건 없음
+
+       2. 프론트엔드 기반 통합 프레임워크들의 사용방법도 나날히 쉬워지기에, 미래의 개발환경의 점유율이 높아질 수 있기에 대비해서 나쁠건 없음
+    
+           ex) 회원인증 기능도 Next-auth 라이브러리를 끌어다 쓰면 10초면 구현 가능
+    
+       3. react기반이기에 react 문법을 사용하여, 특히나 쉽게 입문 가능
+
+       4. GatsBY, nuxt, sveltekit, remix, Next.js 중 Next.js가 가장 꾸준하게 많이 쓰고, 만족도 수준과 유지력도 좋다는 점에서, 나중에 미래는 이 녀석이 될 확률이 높음
+
+       5. 14버전 부터는 각종 편의성이 매우 증가함
+           1) 폴더 기반 자동 라우팅으로 폴더와 JS파일만 만들면, 자동으로 잡아내서 HTML페이지를 생성해 줌
+           2) 서버API 기능이 개선
+           3) 더 쉬운 DB연결
+           4) 직관적으로 rendering 전략 선택할 수 있는 기능이 존재 = SSG, CSG를 선택 가능하며 JS 없는거도 개발 가능 
+           5) hydration 없는 server-side rendering
+           6) 파워풀하고 쉬운 캐싱
+           7) 이미지와 폰트 최적화
+    
+
+    # Next.JS의 단점
+       1. react 라이브러리의 신문법인 client component, server component의 구분을 적극적으로 하는데, 이를 구분해서 코드를 짜는게 프로젝트 커지면 복잡할 수 있음
+
+       2. WebSocket, WebRTC 같은 기능은 제대로 지원하지 않음 
+          (= 직접 Nodejs + express 서버를 하나 더 만드는게 나음)
+
+       3. HTML 랜더링에 기능이 집중되어 있고, 서버기능 쪽은 아직 상대적으로 갈 길이 멀다는 점
+
+       4. 14버전인데 아직도 프레임워크 자체 버그가 종종 보임
+           -> react 라이브러리를 적극 반영한건 좋은데, 아직 react가 구현하지 않은 미완성 기능들까지 도입해놓은 것 포함
+
+       5. 14버전부터 폴더 기반 자동 라우팅 기능이 강화된 덕분에, 프로젝트 커지면 관련 예약 파일들이 많아져 복잡도가 올라갈 수는 있음
+
+
+    # Next.js 프로젝트 생성 (= 서버까지 생성)
+      1. nodejs 설치
+      2. 작업폴더만들고 에디터로 오픈
+      3. 터미널에 npx create-next-app@latest 입력
+          -> (참고) 이 명령어가 'npm init -y'로 대표되는 node 서버의 초기화 기능까지 담당해 줌
+
+      4. 프로젝트 설정을 결정해야 하는데, App Router는 사용한다 체크하고 나머지는 적절히 체크
+
+         ex) 프로젝트 이름, App Router 사용할 건지, Typescript 사용여부, ES lint 사용여부, Tailwind CSS 사용여부, src 폴더 사용 여부, import alias 사용시 어떤 문자를 쓸건지 등
+
+      5. page.js에 존재하는 기본 예시 화면에 대한 코드인 return 부분 다 지우고 <div></div>만 적고 코딩 시작
+      6. global.css의 내용도 전부 지우기
+      7. 터미널에 npm run dev 를 입력 = 서버 미리보기 띄우기 (page.js가 메인페이지)
+      8. http://localhost:3000 으로 접속
+
+
+    # 프로젝트 파일들
+       1. app 폴더 : react와 비슷하게 화면 관련 코드들이 들어있는 핵심 폴더
+
+          1) page.js   : 메인 페이지에 해당하는 JS파일
+          2) layout.js : 메인 페이지를 감싸는 용도로 제작된 JS파일
+
+              ex) <head> 태그의 내용들을 여기다 담기도 함 
+              ex) 페이지 간 공용으로 사용하는 component들의 경우
+                   -> 상단 navigation 같은 녀석들
+
+          3) globals.css
+              : 모든 페이지에 적용되는 전역 style들을 적는 css파일
+
+          4) js파일명.node_modules.css
+              : 특정 js파일명을 가진 JS 페이지에만 적용되는 style들을 적는 css파일
+
+          5) api 폴더
+              : node JS 본연의 기능인 웹서버 관련 기능을 담당하는 JS코드들이 모여 있는 app 폴더 내부의 폴더
+ 
+          6) public 폴더
+              : 이미지, 폰트 static 파일들을 보관하는 app 폴더 내부의 폴더 
+
+       2. 그 밖에 존재하는 파일/폴더들
+
+          1) next.config.js   
+              : nextjs 설정 파일
+
+          2) node_modules 폴더
+              : 프로젝트 구동에 필요한 node JS 기반 라이브러리 보관용 폴더 
+                 -> npm을 통해 다운받은 내용들을 다 여기 보관
+
+          3) package.json     
+              : npm 명령어 내용과 설치한 라이브러리 버전 기록용 파일.. 
+                 -> 이거 하나면, 나중에 npm install 한 방으로 모든 라이브러리를 npm에서 다시 다운로드 가능
+
+ 
+    # React 라이브러리의 JSX 문법(functional component를 기반으로 설명) 대략 정리
+       -> React 기반의 프레임워크 Next.js에서 페이지 layout작성을 위한 문법.. 
+          (심화된 내용을 내용을 원한다면, react 쪽 문서 참고)
+
+
+       1. functional component 함수의 return() 안에는 해당 component 단위를 구성하는 HTML 기반의 코드에 대한 내용이 기입되어야 함
+           -> 최상위 태그가 뭔지는 상관은 없음
+
+          @ functional component 작성시 주의사항
+             1) (중요!) 각 component를 구성하는 최상위 HTML 태그에 해당하는 녀석은 '반드시' 1개만 허용됨
+
+                 ex) 최상위 태그가 2개 (X)
+
+                     return (
+                       <div></div>
+                       <div></div>
+                     )
+
+                 ex) 굳이 하고 싶다면, 다른 최상위 태그로 감싸자 (O)
+
+                     return (
+                       <> 
+                         <div></div>
+                         <div></div>
+                       </>
+                     )
+
+             2) HTML 기반의 코드 = HTML 문법과 유사하나, 결과적으로는 HTML과 유사할 뿐, 여러 부분에서 JSX에서만 통용되는 유사 HTML 문법이라고 보면 됨
+                
+                 ex) JS변수의 값을 {}를 통해 넣거나, 각종 속성명이 HTML 원본의 그것과는 다르게 설계, style 속성값 작성법이 js객체 형식으로 작성되어야 함
+
+       
+       2. HTML에서의 class 속성 -> className으로 기입
+           : JS의 class라는 예약어가 class 문법과 관련해서 이미 존재하고 있기 때문
+             (= 작성하는 JSX파일의 functional component도 따지고보면, JS영역이라고 볼 수 있음) 
+
+             ex) JSX에서는 class (X) -> className (O)
+             
+                 export default function Home() {
+                   return (
+                     <div>
+                       <h4 className="title">애플후레시</h4>
+                       <p className="title-sub">by dev kim</p>
+                     </div>
+                   )
+                 }
+ 
+       3. functional component의 HTML영역 작성시 함수 내의 JSX변수 값을 넣고 싶을때는 어디서든 { JSX변수명 }을 사용하자
+           -> (중요) className, id, href 이런 HTML 속성에 해당하는 값에도 사용이 가능
+               -> (참고) ES6 이후 백틱(``)을 통한 문자열 작성시 JS에서도 `문자열어쩌고 ${JS변수명} 끝`과 같은 식으로 변수의 값을 문자열 도중에 끌어들일 수 있음
+        
+                   ex) HTML 속성에 해당되는 값이라도 상관없이 {}를 쓰면 함수 내부의 지역변수명을 사용 가능
+                   
+                       export default function Home() {
+
+                         let name = 'park';
+                         let link = 'https://naver.com';
+
+                         return (
+                           <div>
+                             <h4 className="title">애플후레시</h1>
+                             <p className="title-sub">by dev {name}</p>
+                             <a href={link}>링크</a>
+                           </div>
+                         )
+                       }
+
+       4. functional component의 HTML영역 작성시 inline style 형식으로 style 값을 넣고 싶으면, 'JS객체 자료형' 형식으로 작성해야 함 
+          (주로 동적으로 component에 style 변경이 필요한 경우 쓰이곤 함)
+
+           ex) JSX에서의 component의 style 작성 형식 
+                : {{ style속성명1 : '값1', ... , style속성명N : '값N' }}
+
+                  export default function Home() {
+                    return (
+                      <div>
+                        <h4 className="title" style={{ color : 'red', fontSize : '20px' }}>애플후레시</h4>
+                        <p className="title-sub">by dev {name}</p>
+                      </div>
+                    )
+                  }
+
+          @ (주의) style 속성 작성시 주의사항
+             : '-'이 들어간 style속성명의 경우, camalCase 형식으로 작성해 줘야 함
+                 -> 'JS객체' 형식 내부에 입력되는 style 속성명은 '-'을 인식할 수 없기 때문임 
+
+                     ex) font-size -> fontSize
+            
+            
+
+
+
+           
+
+
+
