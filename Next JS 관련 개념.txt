@@ -168,6 +168,9 @@
                  b. 해당 component에서 통용되는 state 객체의 데이터들은 캡슐화가 되어 있음
                     (= 다른 component로 부터 값을 보호 가능하며, 자신의 값은 자신들만 조작이 가능한 구조)
 
+                 c. component의 state객체가 변하는 부분에 한해서, 해당 영역의 component 부위만 다시 랜더링 가능
+                    (= 페이지 재랜더링을 딱 변화가 필요한 부분만 하니 작업 효율과 성능이 올라감)
+
                (단점)
                  a. component 간 state 객체의 값을 전달받는 방법은 자기 후손들에게 일일히 props 객체를 구성해서 전달하는 방법 뿐이 없음 
                     (= 형제 component간 값을 주고받을 수 없고, 부모에게 값을 주는 방법도 없고, 오로지 받기만 해야함)
@@ -273,12 +276,15 @@
 
                 (JSX 이벤트헨들러 사용법)
                   : functional component의 HTML영역 작성 중, camalCase이벤트속성명 = {콜백함수} 형식으로 이벤트 수행시 내용을 작성
-                      -> 이와 component의 상태값을 관리하는 state객체와 연계되어 component의 값을 실시간으로 변경시키고, 서버로 보내 DB에 저장하고, 비동기적으로 화면에 반영 
+                      -> 이와 component의 상태값을 관리하는 state객체와 연계되어, state객체의 변경이 감지되면 해당되는 component 부분에 한해서 비동기적으로 화면을 실시간으로 변경
+                         (= 사실상 CSR방식으로 동작하는 react의 사용목적을 생각하면, 사실상 이벤트핸들러는 해당 방식으로 강제되는 셈이나 다름없음)
 
-                          ex) <button onClick={()=>{ 이름변경('park') }}>버튼</button> 
+                          ex) onClick, onMouseOver, onChange 등등이 존재함...
+                          
+                             <button onClick={()=>{ 이름변경('park') }}>버튼</button> 
 
           2. props/state 객체
-              : CSR(client side rendering) 방식으로 component에서 새로고침되지 않고 비동기적으로 서버와 통신하며 실시간으로 화면의 값을 변경해주는데 필요한 component들의 값과 관련된 대한 객체
+              : CSR(client side rendering) 방식으로 component에서 새로고침되지 않고, 웹서버의 응답과 별개로 비동기적으로 통신하며 실시간으로 화면의 값을 변경하여 재랜더링 해주는데 필요한 component들의 값과 관련된 대한 객체
                 (= react에서 CSR(client side rendering) 방식을 구현하는 핵심 개념이기에, server component 사용시에는 사용 불가)
 
              @ (중요!) CSR 방식에서의 component의 특징 (= react에서의 component의 특징)
@@ -291,50 +297,147 @@
                 : 부모 component -> 자식 component로 연계에 필요한 값들을 보낼 목적으로 사용되는 JS객체
                    -> 자식 component에 1번째 parameter 형식으로 보내지며, {1번째parmeter명.멤버변수명} 형식으로 꺼내쓸 수 있음
 
-                   
-                       -> (주의) 
-                             자식 -> 부모)
+                 (props 객체를 통해 자식 component에 값을 전달하는 법)
+                  a. (중요) CSR방식으로 동작하는 기능의 코드를 짜는 것이므로, 'use client'; 를 작성
+                  b. 부모 component의 HTML 반환값 부분에 가서 <자식component명 = {전해줄데이터} or "원시값" /> 이런식으로 작성
+                  c. 자식 component의 함수 정의 영역으로 가서 props라는 parameter를 등록 후 {props.멤버변수명} 이런식으로 호출 
 
-1. 자식컴포넌트 사용하는 곳에 가서 <자식컴포넌트 작명={전해줄데이터} /> 
+                     ex) props 객체에 '상품'이란 멤버변수를 담아 CartItem 컴포넌트로 보내면, 해당 컴포넌트는 'props.상품'으로 해당 값을 꺼내쓸 수 있음
 
-2. 자식컴포넌트 정의부분으로 가서 props라는 파라미터 등록 후 props.작명 사용
+                         export default function Cart() {
+                           let 장바구니 = ['Tomatoes', 'Pasta']
+                           return (
+                             <div>
+                               <h4>Cart</h4>
+                               <CartItem 상품={장바구니[0]}/>
+                               <CartItem 상품={장바구니[1]}/>
+                             </div>
+                           )
+                         }
+                         
+                         function CartItem(props){
+                           return(
+                             <div className="cart-item">
+                               <p>{props.상품}</p>
+                             </div>
+                           )
+                         }  
 
-이러면 부모가 자식에게 변수나 데이터를 전송해줄 수 있습니다. 
+                 (props 객체 주의사항) 
+                   a. 오직 부모 component-> 자식 component 간 1방향 전송만 가능
+                      (= '자식 -> 부모' or '형제간 전송' or '선조 -> X대' 직계 전달 다 해당 안 됨)
 
+                   b. X대 자손 component에 선조 component가 props객체를 보내려면, 귀찮아도 X번 props객체를 통해 값을 되물림해야 함
 
-export default function Cart() {
-  let 장바구니 = ['Tomatoes', 'Pasta']
-  return (
-    <div>
-      <h4>Cart</h4>
-      <CartItem 상품={장바구니[0]}/>
-      <CartItem 상품={장바구니[1]}/>
-    </div>
-  )
-}
+                   c. props 객체로 부모 component가 보낼수 있는 멤버변수의 갯수는 제한X
+                     
+                      ex) <CartItem 이런거={이런거}  저런거={저런거} ..... 캡틴={하루종일도가능해}> 이렇게 많이 전송 가능
 
-function CartItem(props){
-  return(
-    <div className="cart-item">
-      <p>{props.상품}</p>
-    </div>
-  )
-}  
-
-(참고1) props는 <CartItem 이런거={이런거}  저런거={저런거}> 이렇게 많이 전송가능
-
-(참고2) 일반 문자데이터 전송하려면 중괄호 없이 <CartItem 어쩌구="어쩌구"> 해도 됩니다.
-
-(참고3) 오직 부모 component-> 자식 component 간 1방향 전송만 가능
-
-(참고4) props와 functional component의 관계는 parameter와 function의 관계라는 점은 중복의 최소화를 유도 가능
+                   d. props객체 : functional component = parameter : function 의 관계라는 점은 중복의 최소화를 유도 가능
 
              @ state 객체
                 : component를 구성하는 값들을 관리하는 객체
-                   -> 실시간으로 변동이 감시되면? 서버의 응답과 상관없이 먼저 비동기적으로 화면에 그 변화를 반영해줘서 사용자 경험을 높히는 핵심 JS객체
+                   -> 실시간으로 state 객체값의 변동이 감시되면? 변화한 state변수를 사용하는 component에 한해서만, 서버의 응답과 상관없이 먼저 비동기적으로 재랜더링을 해줘서 사용자 경험을 높히는 핵심 JS객체
                 
-   
+                 (state 객체에 멤버변수를 선언하고 초기화하고, setter함수 선언하기)
+                   a. (중요) CSR방식으로 동작하는 기능의 코드를 짜는 것이므로, 'use client'; 를 작성
+                   b. 상단에 import {useState} from 'react'를 작성해서 import 준비
+                   c. (중요) react 18버전 이후, state객체에 멤버변수와 setter함수를 선언할 때는 useState(초기값)함수로 구조분해 할당 문법을 사용함
+                        -> useState(초기값) 함수는 [어떤 state의 초기값, 해당 state의 setter함수]를 반환하는데, 이를 구조분해구문을 통해 각각 [state변수명, 해당setter함수명]에 대입
 
+                           ex) let [state멤버변수명, 해당setter함수명] = useState(초기화값 or [초기화배열] or {초기화 객체} );
+
+                   d. 해당 state객체가 속한 component의 HTML 반환값 부분에 가서, {state멤버변수명}으로 해당 state객체멤버값이 위치할 곳을 정해주고, 이벤트핸들러의 {콜백함수}의 내용에 {해당setter함수명(값)}을 넣어줘서 setter사용
+                      (= setter함수가 존재하는 JSX 이벤트핸들러가 작동하는 순간, 해당 state객체변수를 사용하는 component의 부분에 한해서만 바로 재랜더링이 완료됨)
+
+                      ex) 'use client';
+                          import { useState } from 'react'
+                          
+                          export default function List() {
+                          
+                              let [수량, 수량변경] = useState([0, 0, 0]);
+                          
+                              return (
+                                  <div> 
+                                      <h4 className="title">상품목록</h4>
+                                        <div className="food" key={인덱스}> 
+                                            <button onClick = { () => { 
+                                                let copy = [...수량];
+                                                copy[인덱스]--;
+                                                copy[인덱스] < 0 ? null : 수량변경(copy) } }>-</button>
+                                        </div>
+                                  </div>
+                              );
+                          }
+
+
+                 (state 객체 사용시 주의사항) 
+                   a. 'state멤버변수명' 변수의 초기값은 useState의 parameter에 넣은대로고, 해당 멤버변수를 수정하고 싶으면 '해당setter함수명(수정값)'을 기입하면 됨
+                      
+                      ex) '이름'이란 state멤버변수의 초기값은 'kim'이고, 이를 바꾸려면 '이름변경('변경 이름')'을 호출하여 HTML 영역에 채움
+                      
+                          let [이름, 이름변경] = useState('kim');
+
+                          <h4>{이름}</h4>
+                          <button onClick={()=>{ 이름변경('park') }}>버튼</button> 
+
+                   b. state멤버변수를 만드는 이유는 서버에 변경된 값을 전하는 것과 별개로 state객체의 멤버변수의 변화가 감지되면 실시간으로 비동기적 랜더링 로직이 해당 state변수를 사용하는 부분에 한해서만 작동
+                      (= CSR의 목적 자체가 사용자의 웹서비스 경험을 증진시키는데 있음)
+                          -> But.. 그런만큼 모든 변수를 다 state변수로 처리하면, 그건 자원낭비와 성능의 저하로 이어진다는걸 기억하자
+
+                   c. useState(초기값) 함수의 초기값 부분에는 여러 변수의 값이 들어있는 [배열] 기입이 가능함
+                       -> BUT! 해당setter함수명()을 통해 state객체의 멤버변수값의 변화는 '부분적인 요소값'은 안 되고, [배열] 전체를 바꿔야 변경됨
+                          (= 배열명.map(콜백함수)를 통해, 데이터들의 반복적인 부분을 component로 작성해도 setter함수(배열명[인덱스]) 이런식으로 써봐야 해당 부분의 state객체의 멤버배열요소가 수정되지 않음)
+
+                          ex) 초기값이 [배열]인데 setter함수에 paramter로 배열요소를 지정해봐야 수정은 일어나지 않음
+                          
+                              let [이름, 이름변경] = useState(['Tomatoes', 'Pasta', 'Coconut']);
+
+                              <button onClick={()=>{ let copy = 이름[인덱스]
+                                                      copy[0]++
+                                                      수량변경(copy)
+                                                     }}>+</button>
+
+                   d. '해당setter함수명(수정값)'를 호출하면, 반환된  기존state객체값 === 신규state객체값인지 확인 후, 같은게 확인되어 component에 재랜더링할 부분이 없다면 굳이 새로 랜더링하지 않음
+                       -> (중요) c의 경우와 같이 state객체변수 = [배열]이 초기값이면, [배열]이 참조 자료형인걸 모르고 '깊은 복사'를 안하고 '얕은 복사'를 하는 경우 당황하기 마련인데 그러지 말자
+
+                          ex) 참조 자료형을 '얕은복사' 하는 예시
+                               -> [1,2,3]이 위치한 주소값을 저장하는 arr을 arr2에 대입하면, 둘은 사실상 같은 값을 공유하는 셈
+
+                              let arr = [1,2,3]
+                              let arr2 = arr
+                              arr2[0]++
+                              console.log(arr2 == arr)
+
+                          ex) state객체변수값을 '얕은복사(shallow copy)' 한 뒤 수정하면?
+                               -> 'copy'와 '수량' 변수는 사실상 같은 값을 공유함 
+
+                              let copy = 수량
+                              수량[0]++
+                              수량변경(copy)      <-  state변경함수를 써도 기존state == 신규state라서 state변경을 안해 줌
+
+                   e. (c, d의 사례가 있기에) state객체변수의 초기값으로 [배열]을 둔 경우, 해당 [배열]을 수정하고 이를 component 재랜더링까지 가게하기 위해서는?
+                       -> 이벤트헨들러의 콜백함수의 내용 영역에 [배열]값을 spread operator문법( [...], {...} )을 통한 '깊은복사'를 한 뒤에 setter함수를 사용하자
+                           -> (참고) spread operator문법( [...], {...} )
+                                : 대상 변수가 가리키는 메모리 영역에 위치한 컨테이너 데이터의 캡슐화를 해제하고 개별 데이터들을 각각 다른 영역에 복사한 뒤, 이들을 다시 독립적인 컨테이너 자료형으로 캡슐화하고 그 포인터값을 참조로 반환하라는 이야기
+
+                          ex) 참조 자료형을 spread operator문법( [...], {...} )을 통해 '깊은복사(deep copy)' 하는 예시
+                               -> spread operator문법( [...], {...} )를 통해 요소나 멤버의 값 자체가 복사된 컨테이너 데이터는 원본 컨테이너 데이터와 완전히 독립적인 데이터
+
+                              let arr = [1,2,3]
+                              let arr2 = [...arr]
+                              console.log(arr2 == arr);  // false
+
+                              let obj = {멤버1 : a, 멤버2 : b}
+                              let obj2 = {...obj}
+                              console.log(obj2 == obj);  // false
+
+                          ex) state객체변수값을 spread operator문법( [...], {...} )을 통해 '깊은복사' 한 뒤 수정하고, setter함수를 통해 수정하면
+                               -> 'copy'와 '수량' 변수는 아예 각각 다른 [배열]을 참조하고 있기에, '수량' 변수의 [배열]이 수정되고, 이것이 setter함수에 들어가면 state객체값인 [배열]이 다른 것으로 확인되어 state객체가 변하고 화면의 재랜더링이 이뤄짐
+
+                              let copy = 수량
+                              수량[인덱스]++
+                              수량변경(copy)      <-  수량 != copy라서 다른 배열값으로 판정되어 state변경을 이행하여 component 영역의 변경된 부분에 재랜더링이 일어남
 
           3. '배열명.map( (요소값, 인덱스) => { 요소값, 인덱스 사용 내용 return 문 } )' 함수를 통해, functional component의 return값을 반환하는 HTML 안에서 반복문 사용 가능!
                -> js에도 배열명.map이 있고, JSX에도 있지만, 반환되는 HTML 내부에는 JSX의 map구문이 사용된다고 보면 됨
@@ -666,3 +769,57 @@ function CartItem(props){
                     3) import * from '모듈경로명'
                         : 해당 모듈에서 export한 모든 함수나 변수를 모듈로 가져오는 경우 사용하는 문법
                            -> But 이렇게 하면 어떤 변수나 함수를 사용하는지 알 수 없고, 불필요한 내용까지 가져오는 경우가 있어 성능이나 코드 구조 파악이나 모두 힘듦
+
+
+    # Next.JS와 MongoDB 관련 특수지식들
+
+Q. let db 변수를 database.js에 적어두고 export {db} 해서 쓰면 매번 저렇게 길게 안써도 될듯요?
+
+await connectDB 처럼 await 붙는 것들은 export해서 쓰면 이상해질 수 있습니다. 
+
+현재는 실험단계인 top-level await 기능을 추가하거나 하면 해볼 수 있습니다. 
+
+next.config.js 파일열어서
+ 
+
+ /** @type {import('next').NextConfig} */
+const nextConfig = {
+  experimental: {
+    appDir: true,
+  },
+  webpack(config) {
+    config.experiments = { ...config.experiments, topLevelAwait: true }
+    return config
+  }
+}
+module.exports = nextConfig
+webpack(){} 부분만 붙여넣으면 될텐데 근데 nodejs 버전이 낮으면 못쓰는 기능이라
+
+나중에 클라우드로 서버 배포할 때 클라우드서비스에서 nodejs 높은버전 제공을 안해주면 못씁니다. 
+
+그래서 지금은 일반적으로는 쓰지 않습니다. 
+
+ 
+
+[collapse]
+ 
+
+ 
+
+ 
+
+ 
+
+실은 MongoDB말고 다른 데이터베이스 사용해도 방법은 비슷합니다.
+
+- DB 조작도와주는 라이브러리 설치하고 
+
+- DB 연결하는 코드 셋팅해놓고 
+
+- 라이브러리 사용법 대로 DB 입출력하는 코드 사용하면 됩니다. 
+
+ 
+
+(참고) DB입출력하는 코드는 server component 안에서만 사용합시다. 
+
+client component 안에 적은 코드는 유저들도 쉽게 볼 수 있기 때문에 그렇습니다. 
