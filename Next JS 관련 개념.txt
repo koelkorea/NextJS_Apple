@@ -772,54 +772,50 @@
 
 
     # Next.JS와 MongoDB 관련 특수지식들
+       1. MongoDB 세팅은 일반적으로 Node.js에 하는 것과 차이 없음
+           -> DB연결용 보일러플레이트 코드도 new MongoClient(url, options).connect()의 값을 모듈분리하여 export 시켜도 전혀 문제없음
 
-Q. let db 변수를 database.js에 적어두고 export {db} 해서 쓰면 매번 저렇게 길게 안써도 될듯요?
+       2. Next.JS에서 MongoDB를 사용한다는건, React 라이브러리와 DB를 같이 쓰는 것이라고 볼 수 있음
+          (= import한 모듈화된 연결변수와 DB호출함수는 component 안에 지역변수처럼 해줘야 component내에서 정상동작하는데 유리함)
 
-await connectDB 처럼 await 붙는 것들은 export해서 쓰면 이상해질 수 있습니다. 
+       3. (중요) DB입출력하는 코드는 server component 안에서만 사용해야 함
+           -> client component 안에 적은 코드는 유저들도 쉽게 볼 수 있음!!
 
-현재는 실험단계인 top-level await 기능을 추가하거나 하면 해볼 수 있습니다. 
+       4. Next.Js에서 작성을 권하는 DB연결변수를 분리 모듈로서 관리하는 database.js의 MongoDB 관련 보일러플레이트 코드는 다음과 같음
+           -> Nextjs의 경우 개발환경에서 JS파일을 작성 중이라 갱신할 때마다 JS파일들을 다시 읽어들이고 코드를 재실행함
+              (= DB연결 객체인 MongoClient.connect()가 동시에 여러 개 실행될 수 있고, DB의 성능낭비가 심해지는 문제 발생)
+                  -> 방지 차원에서 개발중임이 확인되면 Next.JS에서 가지고 있는 global이라는 전역변수 객체에 연결정보를 저장할 수 있음
 
-next.config.js 파일열어서
- 
+                     ex) import { MongoClient } from 'mongodb'
+                         const url = 'DB접속URL~~'
+                         const options = { useNewUrlParser: true }
+                         let connectDB
+                         
+                         if (process.env.NODE_ENV === 'development') {
+                           if (!global._mongo) {
+                             global._mongo = new MongoClient(url, options).connect()
+                           }
+                           connectDB = global._mongo
+                         } else {
+                           connectDB = new MongoClient(url, options).connect()
+                         }
+                         export { connectDB }
 
- /** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
-  webpack(config) {
-    config.experiments = { ...config.experiments, topLevelAwait: true }
-    return config
-  }
-}
-module.exports = nextConfig
-webpack(){} 부분만 붙여넣으면 될텐데 근데 nodejs 버전이 낮으면 못쓰는 기능이라
 
-나중에 클라우드로 서버 배포할 때 클라우드서비스에서 nodejs 높은버전 제공을 안해주면 못씁니다. 
+       5. 비동기코드이기에 promise문법으로 통제되는 DB연결로직이 선행되기에, DB호출코드들을 export 시키면 안정성이 떨어진다는 문제에 대한 Next.js 솔루션?
+           -> Next.Js는 현재 next.config.js파일에서 실험단계인 top-level await 기능을 true/false로 해금할 수 있게해서, true시 DB호출코드까지 export해도 안정적으로 작동할 수 있도록 기능을 추가중임
+               -> But! nodejs 버전이 낮으면 못쓰는 기능이라.. 클라우드를 쓰기라도 할 경우 서버가 지원안해주면 못 씀
 
-그래서 지금은 일반적으로는 쓰지 않습니다. 
-
- 
-
-[collapse]
- 
-
- 
-
- 
-
- 
-
-실은 MongoDB말고 다른 데이터베이스 사용해도 방법은 비슷합니다.
-
-- DB 조작도와주는 라이브러리 설치하고 
-
-- DB 연결하는 코드 셋팅해놓고 
-
-- 라이브러리 사용법 대로 DB 입출력하는 코드 사용하면 됩니다. 
-
- 
-
-(참고) DB입출력하는 코드는 server component 안에서만 사용합시다. 
-
-client component 안에 적은 코드는 유저들도 쉽게 볼 수 있기 때문에 그렇습니다. 
+                  ex) next.config.js 파일열어서 webpack(){} 부분을 참고
+                  
+                       /** @type {import('next').NextConfig} */
+                      const nextConfig = {
+                        experimental: {
+                          appDir: true,
+                        },
+                        webpack(config) {
+                          config.experiments = { ...config.experiments, topLevelAwait: true }
+                          return config
+                        }
+                      }
+                      module.exports = nextConfig
