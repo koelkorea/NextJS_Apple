@@ -259,10 +259,10 @@
                (= 따라서 MongoDB는 컨텍스트 제어를 위한 async, await를 항시 사용할 것을 권유함.. 그게 아니면 db요청 결과를 기다리지 않고, 그냥 진행함)
          
                1. (컬랙션명에 데이터를) 단일 입력(insertOne)
-                   : MongoClient객체.db('프로젝트명').collection('컬렉션명').insertOne( {칼럼명1 : '내용1'} , ... , {칼럼명2 : '내용2'} )
+                   : MongoClient객체.db('프로젝트명').collection('컬렉션명').insertOne( {칼럼명1 : '내용1' , ... , 칼럼명2 : '내용2'} )
     
                2. (컬랙션명에 데이터를) 복수 개수 입력(insertMany)
-                   : MongoClient객체.db('프로젝트명').collection('컬렉션명').insertOne( {칼럼명1 : '내용1', 칼럼명2 : '내용2'} , ...  )
+                   : MongoClient객체.db('프로젝트명').collection('컬렉션명').insertMany( {칼럼명1 : '내용1', 칼럼명2 : '내용2'} , ...  )
     
                3. 단일 데이터만 수정(updateOne)
                    : MongoClient객체.db('프로젝트명').collection('컬렉션명').updateOne( QueryMethod객체 , $예약어 {칼럼명1 : '수정할 내용1'} , ... , {칼럼명2 : '수정할 내용2'} } )

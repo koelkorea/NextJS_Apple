@@ -257,18 +257,38 @@
                           ex) font-size -> fontSize
      
                4) react의 CSR 방식의 Routing기능을 만들고 싶다면, component 반환값 html 레이아웃을 작성시, <a>태그 대신 Link를 import하고 대신 쓰면 됨
-                  (새로고침없이 부드럽게 페이지 이동이 가능하다는 장점이 있음)
-                 
-                  ex) import Link from "next/link";
-                  
-                      <body>
-                        <div className="navbar">
-                          <Link href="/">Home</Link>
-                          <Link href="/list">List</Link>
-                        </div>
-                        {children}
-                      </body>
+                   -> (중요) server component에서도 사용가능하나, CSR방식을 사용하여 새로고침없이 부드럽게 페이지 이동이 가능한 soft Refresh 기능을 사용..
 
+                       ex) import Link from "next/link";
+                  
+                            <body>
+                              <div className="navbar">
+                                <Link href="/">Home</Link>
+                                <Link href="/list">List</Link>
+                              </div>
+                              {children}
+                            </body>
+
+                   -> (NEXT.JS의 <Link> 태그와 prefetch()의 관계)
+                        : <Link> 태그는 서버에서는 랜더링만 해주고, client 측의 JS런타임에서 useRouter().perfetch()에 해당하는 기능을 수행가능하기에 CSR임에도 server component 환경에서 쓸수 있게 설계됨 
+                           -> 만약 <Link> 태그가 보이면, URL에 해당하는 페이지를 미리 로딩해주는 prefetch() 기능을 써서 CSR방식으로 동작하는 것을 원하지 않는다면? 
+                               -> prefetch 속성값 = false로 변경하기
+   
+                                  ex) <Link href={'/어쩌구'} prefetch={false}>링크</Link> 
+   
+                        a. <Link> 태그
+                            : react hooks의 useRouter()함수의 perfetch() 메서드를 사용하는 components에 해당하는 NEXT.JS의 component
+                               -> perfetch()
+                                   : 해당 코드가 화면에 보이는 즉시 'URL명'에 해당하는 웹페이지를 먼저 로딩하는 성능 향상을 위해 필요할 때만 동작하는 client측의 코드
+                                     (= perfetch()는 클라이언트 측의 JavaScript 런타임이 처리하는 함수라는 것)
+                               
+                        b. perfetch()의 기능은 client 측의 JS런타임이 담당 = <Link>는 웹서버 측에서는 단순히 HTML로서의 <Link>를 랜더링만 해줄뿐
+                           (= 서버측에서는 <Link> 랜더링을 다 해놓고, client측의 JS런타임이 이를 처리할 수 있게 보냄으로서, <Link> 태그 처리를 이행한다는 것)
+                                -> 그래서 perfetch()를 통해, CSR 방식임에도 server component에서도 사용이 가능한 태그라는 것
+                        
+                        c. client측의 JS런타임은 화면에 <Link>가 보이는 상황이 감지되고, 성능적으로 필요한 상황을 감지하여 perfetch() 기능이 필요할 때 <Link> 태그에서 실행함
+                            -> IntersectionObserver라는 API가 해당 기능을 담당함
+                                               
             @ functional component 고유의 이벤트속성 문법 (= react 전용 JSX 이벤트헨들러 문법)
                : functional component의 HTML영역 작성시, HTML의 이벤트속성과 유사한 이벤트핸들러 문법으로 CSR방식으로 동작하는 이벤트를 작성 가능함
                   -> CSR방식으로 동작하게 설계되어 있는 문법이니, Client component에서만 사용가능
@@ -534,7 +554,7 @@
                                    );
                                }
 
-    # Next.js의 URL에 따른 웹페이지 자동 라우팅 기능 구현법
+    # Next.js의 URL에 따른 웹페이지 자동 라우팅(auto routing) 기능 구현법
 
       1. app 폴더 내부에 폴더를 하나 만들고 작명
 
@@ -574,7 +594,149 @@
   
                     ex) '도메인/list'라는 url을 사용자가 호출하면, /app/list/에 위치한 '상품목록.js'을 rendering 해주세요 로직
 
+      4. 동적 라우트(dynamic route) 기능
+          : '폴더위치 = url' 구조로 치환되는 Next.JS에서 '특정 데이터의 상세페이지'처럼 url이 '도메인/폴더명/pk값'과 같은 URL을 Next.JS의 방식으로도 라우팅을 구현할 수 있도록 지원하는 기능
+      
+        @ dynamic route를 지원하는 폴더와 page.js파일, 그리고 component 만드는 법
+
+           1) 폴더를 만들 때 폴더명에 []을 씌우기
+              (= '이 부분에 해당하는 URL에는 아무거나 입력하면 됨'과 같은 의미)
+                   -> (중요!) 이렇게 구성해놓으면, []부분에 해당하는 수많은 폴더들을 직접 만들 필요가 없음
+
+              ex) [폴더명]
+                    -> 예를 들어, '/photo/[폴더명]/page.js'에 해당하는 웹페이지를 호출하려면, 'https://도메인/photo/아무문자'로 URL을 입력하면, 웹서버가 아무문자에 해당하는 부분의 정보를 잘 URL parameter로 받아서 원하는 데이터를 가져와서 페이지를 랜더링해줌
+
+           2) dynamnic route에 해당하는 URL요청에 웹서버가 응답하여 랜더링(rendering)을 할 대상인 page.js를 생성하고, 해당하는 functional component를 작성함
+               -> (중요) dynamic route의 [폴더명]에 해당하는 URL parameter에 해당하는 부분을 가져오고 싶으면?
+                    : page.js의 functional component의 parameter 기입 항목에 props를 작성하고, component {}안에 'props.params.원하는parameter명' 출력하면 됨
+
+                      ex) '/app/detail/[id]/page.js'에 해당하는 파일 경로을 통해, Next.JS는 해당 component를 'https://도메인/detail/id명'이란 URL에서 id명에 따른 동적 라우트(dynamnic route)를 쓰는 component로 인식
+                            -> 'https://도메인/detail/id명'의 'id명'은 [id]폴더에 대응되며, 'props.params.id'로 꺼내쓸 수 있음
+                                (= 페이지 redirect시 입력된 id명에 해당하는 값의 전달은 props객체를 통한 부모 - 자식 간의 값 교환으로 구현)
+
+                                import { ObjectId } from "mongodb";
+                                import { connectDB } from "@/util/database.js"
+                                
+                                export default async function Detail(props) {
+                                    let db = (await connectDB).db('forum')
+                                    let result = await db.collection('post').findOne({_id : new ObjectId(props.params.id)});
+                                
+                                    return (
+                                      <div>
+                                          <h4>상세페이지임</h4>
+                                          <h4>{result.title}</h4>
+                                          <p>{result.content}</p>
+                                      </div>
+                                    )
+                                }
+
+
+    # Next.JS의 navigation모듈
+       : navigation 모듈을 통해 Next.JS는 React hooks 함수 중 useRouter, usePathname, useSearchParams, useParam를 사용할 수 있게 해줌
+         (= 이를 통해, NestJS에서도 CSR방식의 페이지 간 다용도의 route 기능을 쉽게 구현하게 하는 useRouter나, URL과 연관된 각 정보들의 Getter함수에 해당하는 usePathname, useSearchParams, useParam을 사용할 수 있게 됨)
+             -> a태그에 해당하는 <Link> 태그나 window.location.href 속성값을 변경시키는 이벤트핸들러를 제작하지 않더라도, CSR방식으로 웹페이지간 이동이 가능함
+                (= react 라이브러리의 기능을 사용하니, Virtual DOM을 통한 효율적 화면 전환에 해당하는 로직이 내장되어 있음을 알 수 있음)
+
+        @ (중요) navigation모듈 사용시 주의사항
+           : react hooks에 해당하는 기능 = 'use client'를 써서 client component로 작성했을 때, 제대로 작동하게 되어있음
+
+        @ navigation 모듈의 react hooks 함수들
+
+           1. useRouter()
+               : 손쉽게 웹페이지 간 route 기능을 수행해줄 수 있는 react의 router 관련 JSX객체를 생성해주는 JSX함수
+                 (= react 라이브러리의 기능을 사용하니, Virtual DOM을 통한 효율적 화면 전환에 해당하는 로직이 내장되어 있음을 알 수 있음)
+                   -> 추후 해당 JSX객체의 메서드( push(url명), back(), forward(), refresh(), perfetch(url명) )들을 실행
+
+                      ex) useRouter()를 통한 기능 예시코드
+                      
+                          'use client'
+
+                          import { useRouter } from "next/navigation"
+                          
+                          export default function DetailLink(){
+                              let router = useRouter();
+                              return(
+                                  <div>
+                                      <button onClick={()=> { router.back() } }>뒤로가기</button>
+                                      <button onClick={()=> { router.forward() } }>앞으로가기</button>
+                                      <button onClick={()=> { router.refresh() } }>react식 새로고침</button>
+                                      <button onClick={()=> { router.push('/write') } }>글쓰기</button>
+                                      <button onClick={()=> { router.prefetch('/practice') } }>임시 회원가입</button>
+                                  </div>
+                              )
+                          }
  
+                      1) useRouter().back()
+                          : 현재 페이지를 기준으로 '뒤로가기' 기능을 CSR방식으로 수행
+                           
+                            ex) <button onClick={()=>{ router.back() }}>버튼</button> 
+ 
+                      2) useRouter().forward()
+                          : 현재 페이지를 기준으로 '앞으로가기' 기능을 CSR방식으로 수행
+
+                            ex) <button onClick={()=>{ router.forward() }}>버튼</button> 
+
+                      3) useRouter().refresh()
+                          : 현재 페이지를 기준으로 '새로고침' 기능을 CSR방식으로 수행
+                             -> Virtual DOM을 사용한 로직을 통해, 이전과 바뀐점을 분석해서 바뀐부분만 새로고침하는 soft refresh 사용
+
+                                ex) <button onClick={()=> { router.refresh() } }>react식 새로고침</button>
+ 
+                      4) useRouter().push(url명)
+                          : react 라이브러리를 통한 CSR 방식의 route 기능을 수행하여, 작성한 url명에 해당하는 웹페이지로 이동이 가능해짐
+                             -> Virtual DOM을 사용한 로직을 통해, 변경된 요소만 변경
+
+                                ex) <button onClick={()=> { router.push('/write') } }>글쓰기</button>
+
+                      5) useRouter().perfetch(url명)
+                          : 해당 메서드가 화면에 보이게 된다면, 해당 url의 페이지에 해당하는 내용을 미리 로드하여 사용자가 이를 클릭시 하여금 빠르게 방문이 가능해짐
+                            (= react hooks의 component가 렌더링된 후에 component의 생애상태에 따라 실행되는 사이드 이펙트 코드들을 처리하는 useEffect와 연관)
+
+                            ex) import { useEffect } from 'react';
+                                import { useRouter } from 'next/router';
+                                
+                                export default function MyComponent() {
+                                    const router = useRouter();
+                                
+                                    useEffect(() => {
+                                        router.prefetch('/some-page');
+                                    }, []); // 빈 배열을 사용하여 컴포넌트가 마운트될 때 한 번만 실행
+                                
+                                    return <div>My Component</div>;
+                                }
+                          
+                             -> (perfetch 참고사항)
+                                  a. 링크가 많은 게시판의 경우 모든 링크를 다 읽을게 아니기에, 이를 사용하여 굳이 모든걸 미리 로드하는건 자원낭비기에 상황 봐가며 사용해야 함
+                                  b. server component의 <Link> 태그 또한 perfetch 메서드처럼 해당 코드가 화면에 보이는 즉시 'URL명'에 해당하는 웹페이지를 먼저 로딩
+                                     ( <Link> 태그는 서버에서는 랜더링만 해주고, client 측의 JS런타임에서 useRouter().perfetch()에 해당하는 기능을 수행가능하기에 CSR임에도 server component 환경에서 쓸수 있게 설계됨 )
+                                  c. 만약 <Link> 태그가 보이면, URL에 해당하는 페이지를 미리 로딩해주는 prefetch() 기능을 써서 CSR방식으로 동작하는 것을 원하지 않는다면? 
+                                       -> prefetch 속성값 = false로 변경하기
+                                          (자세한 내용은 <Link> 부분에서 참고)
+
+                                          ex) <Link href={'/어쩌구'} prefetch={false}>링크</Link> 
+
+           2. usePathname()
+               : 현재 URL 출력해주는 Getter 함수
+
+           3. useSearchParams()
+               : 현재 URL의 search parameter (query string)에 해당하는 부분 출력해주는 Getter 함수
+
+           4. useParams()
+               : 현재 URL의 [dynamic route] 부분에 해당하는 URL 파라미터를 부분 출력해주는 Getter에 해당하는 함수
+
+                 ex) usePathname(),  useSearchParams(), useParams()를 통한 기능 예시코드
+                      : 이들의 의의는 복잡하게 window 객체를 통하지 않더라도, URL정보를 도출이 가능하다는거 
+
+                        import {usePathname, useSearchParams, useParams} from 'next/navigation'
+                        
+                        export default function DetailLink(){
+                          let a = usePathname()
+                          let b = useSearchParams()
+                          let c = useParams()
+                          console.log(a)
+                        }
+
+
     # (layout.js 사용) 페이지 간 공용으로 사용하는 component 공용 layout 만드는 과정 (ex : 상단 navigation) 
        : Next.js는 page.js를 보여줄 때, 그 옆에 layout.js 파일이 있으면 layout.js 내용 안에 page.js 내용을 담아서 보여줌
          (= url과 매칭되는 위치의 layout.js를 기준, 가장 안쪽 폴더의 layout은 가장 먼저 적용, app폴더의 layout은 가장 나중에 적용)
@@ -778,7 +940,7 @@
        2. Next.JS에서 MongoDB를 사용한다는건, React 라이브러리와 DB를 같이 쓰는 것이라고 볼 수 있음
           (= import한 모듈화된 연결변수와 DB호출함수는 component 안에 지역변수처럼 해줘야 component내에서 정상동작하는데 유리함)
 
-       3. (중요) DB입출력하는 코드는 server component 안에서만 사용해야 함
+       3. (중요) DB입출력하는 코드는 server component 안에서만 사용해야 함 (async await 방식으로 쓰려면, component에 async 붙여주기)
            -> client component 안에 적은 코드는 유저들도 쉽게 볼 수 있음!!
 
        4. Next.Js에서 작성을 권하는 DB연결변수를 분리 모듈로서 관리하는 database.js의 MongoDB 관련 보일러플레이트 코드는 다음과 같음
@@ -819,3 +981,158 @@
                         }
                       }
                       module.exports = nextConfig
+
+
+    # Next.js에서 서버 기능 제작 
+       : 결론부터 말하자면 Node.js에서 server.js에 일일히 노가다로 제작하던 API들의 제작이 일종의 자동화가 되었다고 볼 수 있음
+         (= URL명 제작 구조를 API라는 폴더와 그 안의 파일들로 단순화 시켜놓고, API의 실행내용은 그 안의 함수 component형식으로 유사하게 만듦)
+ 
+         1. app 폴더 밖에 api 폴더를 만들고 거기에 API명에 해당하는 js 파일을 'API명.js'으로 만듦
+             : /api 폴더 안에 위치한 폴더와 JS파일들은 자동으로 웹서버의 URL에 대응되며, js파일들의 functional component들은 API 호출의 결과로 실행됨 
+
+               ex) /pages/api/test.js 파일은 'https://도메인/api/test' 라는 URL로 호출되는 API의 내용으로 그 내부의 component를 실행함
+                    -> 요청 객체의 내용 가공 및 응답 객체를 통한 client로 보내는 내용 주목 
+              
+                       export default function handler(요청, 응답) {
+                         if (요청.method == 'GET'){
+                           응답.status(200).json({ name: '안녕' })
+                         }
+                         if (요청.method == 'POST'){
+                           응답.status(200).json({ name: '바보' })
+                         }
+                       }
+    
+         2. 'API명.js' 파일 안에 functional component(이름은 뭘로 지어도 됨)를 제작하고, API의 구체적인 실행 내용(DB에 요청할 쿼리, 요청내용 가공, 응답 처리 등)을 작성함
+
+              @ 참고사항
+                 1. server component에 해당하기에 DB 입출력하는 코드를 작성해도 괜찮음 
+                 2. find() 같은 조회 쿼리에 해당하는 메서드를 사용시, 그 결과값이 없다면 NULL로 반환
+                     -> (중요) 만약, 후속코드에 'cursor명.멤버변수' 같은 걸 지정시, NULL에는 멤버가 없으므로 이를 찾을수 없어 바로 런타임 에러가 떠버리니 참고  
+
+                 3. 유저 측에서 보낸 정보를 추측했을 때 DB에 전송을 원하지 않은 상황이 생길경우, 요청(request) 객체의 정보를 조건문에 사용해서 문제를 차단 가능  
+                     -> (참고) 프론트엔드에 있는 모든건 위조가 가능하여 넘어갈 수 있기에, 보낸 값의 대조는 웹서버에서 직접하는게 좋음 
+
+                 4. try, catch 구문을 통한 예외처리를 통해, 에러시의 대처 완성도를 높일 수 있음
+
+                    ex) import { connectDB } from "@/util/database"
+                        
+                        export default async function handler(요청, 응답) {
+                          if (요청.method == 'POST'){
+                            if (요청.body.title == '') {
+                              return 응답.status(500).json('제목써라')
+                            }
+                            try {
+                              let db = (await connectDB).db('forum')
+                              let result = db.collection('post').insertOne(요청.body)
+                              응답.redirect(302, '/list')
+                            } catch (error) {
+                              DB에러시 실행할코드~~
+                            }
+                            
+                          }
+                        } 
+
+              @ client -> server로 들어온 요청(request)에서 들어온 정보 가공하는 코드 작성법
+                 : functional component의 1번째 parameter로 들어가는 요청(request)객체의 멤버변수나 메서드를 사용
+                 
+                    1) 요청.method
+                        : API 호출시 URL말고 HTTP method 또한 알고 싶은 경우, functional component의 1번째 parameter로 들어가는 요청(request)객체의 멤버변수인 method를 호출하면 됨
+                           -> (중요) 이를 이용하면, HTTP 메서드에 따른 조건문을 통해 같은 URL이라도 HTTP 메서드에 다를 경우에 대한 '동URL이API'들을 쉽게 구현가능 
+
+                    2) 요청.body
+                        : client측에서 <form>태그를 통해 데이터를 입력하여 전송하여 API를 호출하는 경우, 서버측에서 유저가 보낸 데이터를 조회하기 위한 요청(request)객체의 멤버객체 body 
+
+                    3) 요청.params
+                        : client측에서 URL paramter 방식을 통해 API를 호출하는 경우, 서버측에서 유저가 보낸 데이터를 조회하기 위한 요청(request)객체의 멤버객체 params 
+
+                          ex) URL 파라미터 예시
+                               : https://www.mydomainxxx.co.kr/detail/33/pw/222
+
+                    4) 요청.query
+                        : client측에서 queryString 방식을 통해 API를 호출하는 경우, 서버측에서 유저가 보낸 데이터를 조회하기 위한 요청(request)객체의 멤버객체 query 
+
+                          ex) queryString 예시
+                               : https://www.mydomainxxx.co.kr/detail?id=33&pw=222
+
+
+              @ server -> client로 '응답(response)'을 보낼 때 필요한 코드 작성법
+                 : functional component의 2번째 parameter로 들어가는 응답(response)객체의 멤버변수나 메서드를 사용
+                    -> (중요) 사실 안해주는 client측은 무한으로 대기중인 상태에 빠질 수 있으므로 거의 필수라고 보면 됨 
+
+                        1) 응답.json(JS원시값 or JS객체 or 배열)
+                            : ()안의 값을 json 형식으로 변환하여 문자열의 형태로 client에 전달하는데 사용
+    
+                        2) 응답.status(status숫자값)
+                            : client 측에 요청에 대한 응답 상태를 전송할 때 사용하며, 여전히 응답(response) 객체를 return하기에, 메서드 메이닝(method chaining)이 가능함
+                        
+                              ex) 응답.status(200).json({ name: '바보' })
+                                   -> client 측에 {"name" : "바보"}가 보임
+    
+                        3) 응답.redirect(status숫자값, 'URL명')
+                            : API를 호출한 client를 다른 페이지로 강제로 이동시키고 싶은 경우 사용하는 메서드
+                               -> (중요) 이건 웹서버 측에서 사용자에게 다른 웹페이지를 랜더링해 보내는 SSR(server side rendering)에 포함
+    
+                                   ex) 응답.redirect(302, '/list');
+
+         3. 'API명.js' 파일의 작성이 다 끝났다면, client의 화면에서 이를 호출해 봐서 잘 작동하는지 확인
+
+              @ client 측의 서버 API 호출법
+                (자세한 내용은 Node.js 측에도 적어둠)
+
+                1) <form> 태그 사용
+
+                   ex) export default function Write(){
+                         return (
+                           <div>
+                             <h4>글작성</h4>
+                             <form action="/api/test" method="POST">
+                               <button type="submit">버튼</button>
+                             </form>
+                           </div>
+                         )
+                       }
+                     
+                   @ <form> 장/단점
+
+                      (장점) 
+                        a. html에서 공식으로 지원하는 형식이라 검증
+                        b. 웹서버로 POST, GET요청을 쉽게 날릴 수 있음
+
+                      (단점)
+                        a. POST, GET요청 말고는 HTTP 메서드를 날릴 수 없음
+                        b. 새로고침이 무조건 동반되는 SSR 방식
+                           (= 전송을 끝날 때까지는 아무것도 못하는 동기적 작동 방식)
+
+                2) ajax(Asynchronous JavaScript and XML) 기능 사용
+
+                   @ ajax 장/단점
+
+                      (장점) 
+                        a. 웹서버에 내용을 전송해도 새로고침을 안해도 됨
+                        b. 비동기적 데이터 교환이 이뤄짐 = 데이터 전송과 관련없이 화면이 유지되고 사용자는 조작이 가능
+                            -> (참고!) 화면 전환없이 이뤄지는 요청과 리턴이기에 ajax를 통한 통신을 주고받는 기능에서는 다른 페이지로 연결하여 새로고침을 유발하는 redirect나 render 같은 함수를 API {}안에 써봐야 작동하지 않음.. 
+                        C. Js를 사용하는 Runtime 환경이면, 서버나 화면에서나 같은 방식으로 데이터를 주고받기 쉽다
+
+                      (단점)
+                        : 기본적으로 버튼을 지원하는 FORM 태그랑 다르게, JS의 이벤트리스너를 통해 스스로 버튼 동작과 기능을 연결시킬 줄 알아야 해서 좀 과정이 귀찮음
+                          (= fetch API가 표준이니 이거는 사용할 줄 아는게 좋음)
+
+                3) URL의 일부로 데이터를 포함해서 href 속성값으로 url을 설정하여 API를 호출하여 서버로 무식하게 보냄..
+                    : 말 그대로 브라우저의 주소창에 해당하는 window.location.href의 속성값을 변경하는 방법으로 웹서버에 무식하게 호출을 보냄
+
+                      @ URL 직접사용 장/단점
+   
+                         (장점) 
+                           a. 추가적인 라이브러리 따위 없이, 간편하게 데이터를 보낼 수 있음
+                           b. (URL 파라미터의 경우) 그나마 보내는 데이터가 어떤 칼럼에서 나오는지를 가리기에 보안적인 면에서 나을수는 있음
+   
+                               ex) URL 파라미터 예시
+                                    : https://www.mydomainxxx.co.kr/detail/33/pw/222
+   
+                               ex) queryString 예시
+                                   : https://www.mydomainxxx.co.kr/detail?id=33&pw=222
+   
+                         (단점)
+                           a. 이를 통해서는 GET방식의 호출 밖에 할 수 없음
+                           b. 새로고침이 무조건 동반되는 SSR 방식
+                           c. (라이브러리에 따라서는) POST 방식을 쓸 수도 있지만, 기본적으로 URL에 데이터를 포함해서 보내기에 보안이 씹망
