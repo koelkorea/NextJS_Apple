@@ -255,8 +255,12 @@
                       -> 'JS객체' 형식 내부에 입력되는 style 속성명은 '-'을 인식할 수 없기 때문임 
      
                           ex) font-size -> fontSize
-     
-               4) react의 CSR 방식의 Routing기능을 만들고 싶다면, component 반환값 html 레이아웃을 작성시, <a>태그 대신 Link를 import하고 대신 쓰면 됨
+
+               4) (주의) <input> 안의 value 속성의 경우 react에서도 쓰는 상황이고, 이는 CSR방식으로 state객체의 변수를 초기값으로 <input>에 두고, react의 onChange 이벤트핸들러 속성과 setter함수로 state객체를 통제하고 싶을 때 사용
+                   : Next.JS에서 SSR방식으로 <input>태그의 value속성을 쓰고 싶은 경우, defaultValue 속성을 쓰도록 하자
+                      -> (중요) 구분해서 써야 할 이유는 value쪽을 쓰려면, CSR방식으로 <input>과 state객체의 요소가 관련된 특별한 용도에 맞는 기능이 추가되는 만큼 성능도 더 많이 잡아먹기 때문...
+
+               5) react의 CSR 방식의 Routing기능을 만들고 싶다면, component 반환값 html 레이아웃을 작성시, <a>태그 대신 Link를 import하고 대신 쓰면 됨
                    -> (중요) server component에서도 사용가능하나, CSR방식을 사용하여 새로고침없이 부드럽게 페이지 이동이 가능한 soft Refresh 기능을 사용..
 
                        ex) import Link from "next/link";
@@ -857,7 +861,7 @@
         : component 종류를 2가지로 지원하여, 개발자가 원하는 방식으로 해당 component 작성 가능
            -> (추천) 웹페이지의 틀은 SSR의 server component로, react적 기능이 필요한 component에 한해서 CSR의 client component 방식으로 제작히여, CSR과 SSR의 장점만 혼합하는 식으로 사용 가능
 
-               1. server component
+               1. server component (Uncontrolled Components)
                    : SSR(Server Side rendering) 방식으로 동작하는 component 단위
                      (= react가 아닌 HTML, CSS, JS만을 사용하겠다는 것을 의미)
 
@@ -876,9 +880,9 @@
                              (= 쉽게말해 react를 전혀 쓸 수 없으므로, useState, useEffect, onClick 이런 거 사용X)
 
 
-               2. client component
+               2. client component (Controlled Components)
                    : CSR(Server Side rendering) 방식으로 동작하는 component 단위
-                     (= react 라이브러이의 방식을 쓰겠다는 의미)
+                     (= react 라이브러리의 방식을 쓰겠다는 의미)
 
                     @ client component 만드는 법
                        : component 제작시 'use client' 라는 코드를 넣으면 OK

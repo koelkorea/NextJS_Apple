@@ -18,6 +18,7 @@ export default async function List() {
                             <Link href={ `/detail/${게시물[인덱스]._id}` } >
                                 <h4>{게시물[인덱스].title}</h4>
                             </Link>
+                            <Link href={'/edit/' + 게시물[인덱스]._id} className="list-btn">✏️</Link>
                             <p>{게시물[인덱스].content}</p>
                         </div>
                     )
