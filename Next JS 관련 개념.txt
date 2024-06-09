@@ -467,7 +467,7 @@
                -> js에도 배열명.map이 있고, JSX에도 있지만, 반환되는 HTML 내부에는 JSX의 map구문이 사용된다고 보면 됨
 
              @ 왜 for, if문을 문법 안 쓰나?
-                : JSX의 functional component의 return값을 반환하는 HTML 안에는 for, if문을 문법을 사용할 수 없음
+                : JSX의 functional component의 return값을 반환하는 HTML 안에는 for, if문(그 대신 '조건문 ? 참 : 거짓'의 '삼항연산자'를 사용)을 문법을 사용할 수 없음
                   (= return값을 반환하는 HTML밖에서는 얼마든지 JS의 문법을 사용해도 전혀 문제가 없음)
 
              @ (주의) 배열명.map( (요소값, 인덱스) => { 요소값, 인덱스 사용 내용 return 문 } ) 사용시 주의사항
@@ -603,12 +603,15 @@
       
         @ dynamic route를 지원하는 폴더와 page.js파일, 그리고 component 만드는 법
 
-           1) 폴더를 만들 때 폴더명에 []을 씌우기
+           1) 폴더 or 파일을 만들 때 []을 씌우기
               (= '이 부분에 해당하는 URL에는 아무거나 입력하면 됨'과 같은 의미)
                    -> (중요!) 이렇게 구성해놓으면, []부분에 해당하는 수많은 폴더들을 직접 만들 필요가 없음
 
               ex) [폴더명]
                     -> 예를 들어, '/photo/[폴더명]/page.js'에 해당하는 웹페이지를 호출하려면, 'https://도메인/photo/아무문자'로 URL을 입력하면, 웹서버가 아무문자에 해당하는 부분의 정보를 잘 URL parameter로 받아서 원하는 데이터를 가져와서 페이지를 랜더링해줌
+
+              ex) [페이지명],js
+                    -> 예를 들어, '/photo/[폴더명].js'에 해당하는 웹페이지를 호출하려면, 'https://도메인/photo/아무문자'로 URL을 입력하면, 웹서버가 아무문자에 해당하는 부분의 정보를 잘 URL parameter로 받아서 원하는 데이터를 가져와서 페이지를 랜더링해줌
 
            2) dynamnic route에 해당하는 URL요청에 웹서버가 응답하여 랜더링(rendering)을 할 대상인 page.js를 생성하고, 해당하는 functional component를 작성함
                -> (중요) dynamic route의 [폴더명]에 해당하는 URL parameter에 해당하는 부분을 가져오고 싶으면?
@@ -859,49 +862,262 @@
 
      # Next.js에서 다중 rendering(SSR, CSR 양쪽 방식 모두 사용 가능)을 지원하는 방법
         : component 종류를 2가지로 지원하여, 개발자가 원하는 방식으로 해당 component 작성 가능
-           -> (추천) 웹페이지의 틀은 SSR의 server component로, react적 기능이 필요한 component에 한해서 CSR의 client component 방식으로 제작히여, CSR과 SSR의 장점만 혼합하는 식으로 사용 가능
+           -> (추천) 웹페이지의 틀은 SSR의 server component로, react적 기능이 필요한 component에 한해서 CSR의 client component 방식으로 제작하면?
+                : SSR을 쓰는 부모 component에 붙히는 방식으로, CSR과 SSR의 장점만 혼합하는 식으로 사용 가능
 
-               1. server component (Uncontrolled Components)
-                   : SSR(Server Side rendering) 방식으로 동작하는 component 단위
-                     (= react가 아닌 HTML, CSS, JS만을 사용하겠다는 것을 의미)
+                 1. server component (Uncontrolled Components)
+                     : SSR(Server Side rendering) 방식으로 동작하는 component 단위
+                       (= react가 아닌 HTML, CSS, JS만을 사용하겠다는 것을 의미)
+  
+                      @ server component 만드는 법
+                         : page.js, layout.js 등 Next.js가 기본적으로 편의성으로 제공해주는 component는 전부 server component라고 생각하면 됨
+  
+                      @ server component 장/단점
+                         -> (장점)
+                             1) 웹서버에서 미리 웹페이지를 랜더링해서 보내주는 고전적인 방식으로 성능적으로 속도가 빠름
+                               (= 웹페이지 로드시 react에서 처럼 랜더링시 비동기적인 JS코드를 쓸 일이 없으니, 작동 최적화를 생각할 필요가 없기 때문)
+  
+                             2) SEO(Search Engine Optimization)에 유리하여, 검색엔진에 노출이 쉬움
+  
+                         -> (단점)
+                             : component의 반환되는 html 안에 react에서 통용되는 JSX문법을 사용할 수 없음 
+                               (= 쉽게말해 react를 전혀 쓸 수 없으므로, useState, useEffect, onClick 이런 거 사용X)
+  
+  
+                 2. client component (Controlled Components)
+                     : CSR(Server Side rendering) 방식으로 동작하는 component 단위
+                       (= react 라이브러리의 방식을 쓰겠다는 의미)
+  
+                      @ client component 만드는 법
+                         : component 제작시 'use client' 라는 코드를 넣으면 OK
+  
+                      @ client component 장/단점
+                         -> (장점)
+                             : component의 반환되는 html 안에 자유롭게 react에서 통용되는 JSX문법을 사용 가능
+                               (= react를 사용할 수 있음) 
+  
+                                1) JSX의 이벤트핸들러 함수를 사용 가능
+                                    : DOM을 직접 조작하는게 아닌, VDOM 로직으로 다른 부분만 다시 랜더링하는 react 기반 프론트엔드 라이브러리에서 사실상 이벤트핸들러 사용법은 이게 유일
+  
+                                2) 새로고침이 강제되지 않는 페이지를 만드는 것이 가능하기에, Ajax 방식의 API호출과 시너지가 우수한 편
+  
+                         -> (단점)
+                             : 웹페이지 상의 모든 동작과 이벤트를 Client 측에서 새로고침 없이 비동기적으로 처리하는 CSR 방식의 근본적인 문제에 직면
+  
+                                1) 웹페이지 용량이 커지게 됨
+                                    : react의 JSX문법에 해당하는 JS코드가 늘어남 + CSR을 위해서는 모든 조작에 반응해야 하므로 다운로드 받을 HTML, CSS, JS 파일이 많을 수 밖에 없음
+  
+                                2) 웹페이지 로딩속도도 약간 느려질 수 있음
+                                    a. Client 측에서 초기에 필요한 정보들을 서버에 API로 호출하고, 이를 직접 랜더링해야 하기 때문
+                                    b. JS로 구현된 React 문법을 적용하는 과정에서, JS로 html을 읽고 분석하는 과정인 hydration에 소요되는 시간도 추가로 발생
 
-                    @ server component 만드는 법
-                       : page.js, layout.js 등 Next.js가 기본적으로 편의성으로 제공해주는 component는 전부 server component라고 생각하면 됨
+                                3) client component에 적은 코드는 데이터를 캡슐화해주는 react의 요소 없이는 유저들이 볼 수 있기에 보안에 문제가 됨
+                                    : state객체변수나 useEffect와 같은 react hook함수를 사용하는 것이 거의 강제됨
 
-                    @ server component 장/단점
-                       -> (장점)
-                           1) 웹서버에서 미리 웹페이지를 랜더링해서 보내주는 고전적인 방식으로 성능적으로 속도가 빠름
-                             (= 웹페이지 로드시 react에서 처럼 랜더링시 비동기적인 JS코드를 쓸 일이 없으니, 작동 최적화를 생각할 필요가 없기 때문)
-
-                           2) SEO(Search Engine Optimization)에 유리하여, 검색엔진에 노출이 쉬움
-
-                       -> (단점)
-                           : component의 반환되는 html 안에 react에서 통용되는 JSX문법을 사용할 수 없음 
-                             (= 쉽게말해 react를 전혀 쓸 수 없으므로, useState, useEffect, onClick 이런 거 사용X)
+                                4) 페이지 로딩에 있어, 모든 경우의 수를 상정하여 코드를 짜야함
+                                    : 어떤 데이터를 가져오는 API를 호출할지부터, 데이터가 없는 경우의 component의 구조들도 작성해야 하는 등.. 개발자가 손봐야 할 내용이 적지 않음 
 
 
-               2. client component (Controlled Components)
-                   : CSR(Server Side rendering) 방식으로 동작하는 component 단위
-                     (= react 라이브러리의 방식을 쓰겠다는 의미)
+     # 다중 rendering(SSR, CSR 양쪽 방식 모두 사용)을 사용하는 component에서 DB데이터를 받고 처리하고 가공하는 방식 
+        : '[부모] : [자식] = server component (Uncontrolled Components) : client component (Controlled Components)' 경우 DB데이터를 어느쪽에서 호출해야 하는지에 대한 딜레마
 
-                    @ client component 만드는 법
-                       : component 제작시 'use client' 라는 코드를 넣으면 OK
+          1. [부모] 측의 server component가 DB 서버로부터 데이터를 받고, 이를 [자식] 측의 client component에 props 객체를 통해 넘겨주기
+              : (추천) 일반적으로 SSO에 띄기 위한 SSR기법의 장점과 component의 동작 측면에서 좋은 성능을 보이는 CSR의 장점까지 두루두루 활용 가능하기에 자주 쓰임
 
-                    @ client component 장/단점
-                       -> (장점)
-                           : component의 반환되는 html 안에 자유롭게 react에서 통용되는 JSX문법을 사용 가능
-                             (= react를 사용할 수 있음) 
+                ex) (/list/page.js)
+                    
+                    <ListItem result={result} />
+                    
+                ex) 구조분해(structure destruction) 문법을 활용하면, {props객체변수}로 parameter를 채워도 props.멤버변수가 아니라 멤버변수만 써도 알잘딱하게 알아먹음
+                
+                    (/list/ListItem.js)
+                    
+                    'use client'
+                    
+                    export default async function ListItem({result}) {
+                      return (
+                        <div>
+                          { result.map((a,i)=>
+                              <div className="list-item" key={i}>
+                                <Link href={'/detail/' + result[i]._id}>{result[i].title}</Link>
+                                <Link href={'/edit/' + result[i]._id} className="list-btn">✏️</Link>
+                                <button>🗑️<button>
+                                <p>1월 1일</p>
+                              </div>
+                           ) }
+                        </div>
+                      )
+                    }
+
+             @ (참고) [부] server - [자] client 관계의 component 구조는 Next.js에서 허용하는 구조고, 이렇게 하면 client component도 DB 데이터를 미리 채워서 보내주게 로직이 짜여서 가능
+                 -> 크롬 개발자도구에서 Javascript disable 해놓고 페이지 방문해서 잘 보이나 테스트해보면, 바로 JS를 통해 해당 로직이 구현되었음을 알 수 있음
+              
+          2. [자식] 측의 client component가 직접 DB서버로부터 데이터를 받는 방안
+              : 가능하고, 괜찮은 방안이지만 꽤 단점이 많아서 써야하는 경우를 잘 상정하는게 중요함
+                (= 사실 그 단점이라는게, 근본적으로 검색엔진 노출이 힘들어서 서비스가 유저들에게 노출이 잘 안 된다는 비즈니스적인 측면에 있음)
+              
+                ex) 'use client'
+                    
+                    export default function ListItem(){
+
+                      const [result, setResult] = useState([]);
+                    
+                      useEffect(() => {
+
+                        async function fetchData() {
+
+                          try {
+                            const db = (await connectDB).db('forum');
+                            let data = await db.collection('post').find().toArray();
+                            setResult(data);
+
+                          } catch (error) {
+                            console.error("Failed to fetch data:", error);
+                          }
+                        }
+
+                        fetchData();
+                      }, []);
+                    
+                      return (
+                        <div>{result}</div>
+                      )
+                      
+                    }
+
+             @ (단점)
+                1) 유저가 코드를 볼 수 있는 보안 문제로 캡슐화를 통한 접근제한이 보장되는 state객체변수와 useEffect와 같은 react hook함수를 통해 DB에 호출하는 코드를 작성하는 것이 좋음
+                    -> useEffect(무명콜백함수, [component명, ...])
+                        : 해당 무명콜백함수의 내용에는 우선순위가 떨어지는 무거운 코드들인 'side efferct'들이 모여있고, [component명]을 적지 않는다면 모든 컴포넌트들이 다 로드된 후에 실행하라는 용도의 react hooks 함수
+                           -> 보통 서버로 DB데이터 요청하는 코드도 예상 시간이 오래 걸리고, 우선순위가 떨어지는 작업이기에 useEffect를 사용함
+
+                2) 처음부터 component에 초기화 된 데이터가 들어가 있는 것이 아님
+                   (= 검색엔진 BOT들은 이걸 보면 기다리지 않고 해당 웹페이지는 내용이 텅 비었다고 판단함 = 검색엔진에 웹페이지가 노출되는 것이 느려지기에 SSO 측면에서 좋지 않음)
+
+
+     # Next.js로 제작된 페이지들의 rendering 종류와 개념 (static rendering / dynamic rendering )
+        : 정적 렌더링(static rendering)과 동적 렌더링(dynamic rendering)으로 나뉘어져 있음 
+            -> 구체적으로 어떤 페이지들이 어떤 렌더링(rendering)으로 동작하는지 알고 싶다면, npm run build 명령어를 통해 complie이 완료된 후 파일에 λ (람다) 표시와 ㅇ표시로 이를 구분 가능
+               (Controlled / Uncontrolled component와 같은 영역이 아니라.. 조금이라도 페이지가 다르게 랜더링되냐 마냐로 더 엄격하게 구분됨)
+                 -> λ로 표시되는 페이지 = dynamic rendering으로 동작
+                    ㅇ로 표시되는 페이지 = static rendering으로 동작
+
+          1. 정적 렌더링(static rendering)
+              : 어떤 유저라도 해당 URL에 접속하게 되면, 매번 npm run build시 생성한 html을 아무런 변동없이 그대로 보내주는 방식의 웹페이지 랜더링
+                 -> 웹 페이지 안에 별 기능이 없기에, 매번 html 페이지를 새로 만들 필요가 없기 때문
+
+                    ex) 100명이 들어와도 언제나 똑같은 웹페이지 복붙하는 '로그인' 페이지 같은거가 여기 해당
+              
+             @ 정적 렌더링(static rendering) 특징
+                : ㅇ로 표시되는 페이지 = static rendering으로 동작
+
+                  (장점)
+                    : 유저가 100명 들어와도 페이지를 새로 만들지 않기에 성능에 유리
+                      (= 애초에 cashing이 필요 없음)
+
+                  (단점)
+                    1) 복잡한 서비스랑은 당연히 거리가 먼 편 
+                    2) cashing(캐싱) 기능을 이용하면, 동적 랜더링(dynamic rendering) 페이지도 효율적인 재사용으로 성능적으로 뒤쳐지지 않을 수 있음
+
+             @ 강제로 정적 렌더링(static rendering)을 쓰도록 고정하는 방법
+                : 원하는 페이지에 해당하는 component의 js파일에 dynamic이란 예약어 변수를 선언하고, 'force-static'을 입력
+                   -> 'auto'가 기본값이며, 이는 알아서 시스템이 판단해줌
+
+                      ex) export const dynamic = 'force-static' 
+    
+                          export default function 페이지(){
+                            (생략)
+                          }
+
+          2. 동적 렌더링(dynamic rendering)
+              : 해당 URL에 접속하게 되면, 접속하는 유저나 상황에 따라 html에 변동사항이 들어가기에, 페이지에 들어갈 때마다 html 페이지를 서버에서 다시 그려주는 방식의 웹페이지 랜더링
+                 -> 변화하는 내용에 영향을 줄 수 있는 fetch('/URL', { cache: 'no-store' }),  useSearchParams(), cookies(), headers(), [dynamic route] 같은걸 사용하는 페이지들이 해당
+
+                    ex) 상세 페이지, 회원정보와 같은 대다수의 페이지들이 여기 해당
+              
+             @ 동적 렌더링(dynamic rendering) 특징
+                : λ로 표시되는 페이지 = dynamic rendering으로 동작
+
+                (장점)
+                  : DB 입출력 기능에 대응할 수 있는 복잡한 서비스에 유리하며, 구현 가능한 영역이 많음
+                
+                (단점)
+                  : cashing(캐싱) 기능을 이용해도, 정적 랜더링(static rendering)에 비해서 성능은 어쩔수 없이 밀림
+
+             @ 강제로 동적 렌더링(dynamic rendering)을 쓰도록 고정하는 방법
+                : 원하는 페이지에 해당하는 component의 js파일에 dynamic이란 예약어 변수를 선언하고, 'force-dynamic'을 입력한 뒤 export처리 
+                   -> 'auto'가 기본값이며, 이는 알아서 시스템이 판단해줌
+
+                      ex) export const dynamic = 'force-dynamic' 
+    
+                          export default function 페이지(){
+                            (생략)
+                          }
+
+             @ cashing(캐싱)
+                : 데이터를 잠깐 몰래 저장해두고 그걸 재사용하여 비용절약 + 속도향상을 노린다는 개념
+
+                  ex) Next.js에선 페이지 캐싱, GET요청결과 캐싱 이런 것들이 존재 
+
+                  1) 페이지 cashing(캐싱) 기능 사용 방법 = (구) ISR
+                     : 원하는 페이지에 해당하는 component의 js파일에 revalidate 이란 예약어 변수를 선언하고, 원하는 초단위 숫자를 입력한 뒤 export처리
+                         -> 특정 페이지를 원하는 시간(초) 만큼 캐싱해두고 재활용을 할 수 있음 
+     
+                           ex) 60초가 지나면, 해당 페이지를 재생성 하여 또 60초간 캐싱해서 유저측에 보여줌
+                               (= 60초마다 static rendering 페이지 하나 생성해주는 식이므로, 과거에는 ISR로 부름)
                            
-                       -> (단점)
-                           : 웹페이지 상의 모든 동작과 이벤트를 Client 측에서 새로고침 없이 비동기적으로 처리하는 CSR 방식의 근본적인 문제에 직면
+                               export const revalidate = 60;
+                               
+                               export default function Page() {
+     
+                                 DB입출력하는코드~~
+     
+                                 return (
+                                   <div>어쩌구</div>
+                                 )
+                               } 
 
-                              1) 웹페이지 용량이 커지게 됨
-                                  : react의 JSX문법에 해당하는 JS코드가 늘어남 + CSR을 위해서는 모든 조작에 반응해야 하므로 다운로드 받을 HTML, CSS, JS 파일이 많을 수 밖에 없음
+                       ((구) ISR 중요사항) 
+                         [1] 방문자가 있어야 페이지를 시간에 맞게 재생성
+                         [2] on-demand revalidation 을 사용하면, 특정 이벤트가 발생시 입력된 시간을 무시하고, 페이지 캐싱을 새로 생성이 가능함
 
-                              2) 웹페이지 로딩속도도 약간 느려질 수 있음
-                                  a. Client 측에서 초기에 필요한 정보들을 서버에 API로 호출하고, 이를 직접 랜더링해야 하기 때문
-                                  b. JS로 구현된 React 문법을 적용하는 과정에서, JS로 html을 읽고 분석하는 과정인 hydration에 소요되는 시간도 추가로 발생
-                                  
+                  2) fetch API에서 사용가능한 GET요청데이터 cashing(캐싱) 기능
+                     : (Next.js 13버전부터) server component에 한해, dynamic rendering 사용 페이지에서 fetch API의 option 파라미터에 cache, revalidate라는 멤버변수를 통해 캐싱을 통한 비용절약 + 속도향상 가능
+     
+                       (cashing 연관 fetch API 멤버변수)
+                         [1] cache
+                              : GET요청 결과값 cashing(캐싱)기능 on/off을 위한 fetch API의 option 파라미터 객체의 멤버변수
+                                (= 시간에 따른 조건부 캐싱이 불가능 -> next라는 option 파라미터 객체의 멤버변수의 객체의 프로퍼티인 revalidate의 존재 이유)
+                                
+                                   a. (기본값) fetch('/URL명', { cache: 'force-cache' }) 
+                                       : fetch()로 요청하면 한 번 가져온 결과를 어딘가에 몰래 저장해두고 웹사이트 다시 npm run build 하기 전까지 계속 가져와 줌
+          
+                                          ex) let result = await fetch('/api/어쩌구', { cache: 'force-cache' })
+      
+                                   b. fetch('/URL명', { cache: 'no-store' }) 
+                                       : fetch()로 요청하면 매번 새로 서버로 요청해서 데이터를 새로 가져옴
+                                         (= 재사용 X, 데이터의 갱신여부가 중요한 경우 사용)
+          
+                                          ex) let result = await fetch('/api/어쩌구', { cache: 'no-store' })
+     
+                         [2] next: { revalidate: 숫자 }
+                              : GET요청 결과값 cashing(캐싱)결과를 얼마나 보관할지를 초 단위 정하기 위한 fetch API의 option 파라미터 객체의 멤버변수와 내부 객체의 프로퍼티
+                                 -> (참고)  웹서버의 API를 작성할 때도 fetch API의 revalidate 옵션기입이 가능
+
+                                    ex) 60초가 지나면 다시 /URL로 새로 요청해서 결과를 가져오고 캐싱
+ 
+                                        let result = await fetch('/api/어쩌구', { next: { revalidate: 60 } })
+     
+                       (fetch API와 관련된 cashing 기능의 중요사항) 
+                         [1] (중요) server component에 한해서만 fetch API의 cashing기능 사용 가능
+                               -> 이것이 server component에서 ajax 사용시 fetch를 계속 쓸 이유라고 할 수 있겠음 
+
+                         [2] (중요) 여러 component에서 동시다발적으로 같은 /url로 fetch하는 경우 중복은 알아서 제거되며, 변수나 state 공유문제도 마찬가지로 데이터 캐싱으로 해결됨
+                                    (= 같은 /url로 요청하는 fetch() 잔뜩 사용해도 비효율 문제가 딱히 없는 이유)
+
+                         [3] 로직 자체는 Next.js에서 바닐라 JS의 fetch() 기본함수를 업그레이드해놔서 사용 가능
+                         [4] 웹서버의 API를 작성할 때도 fetch API의 revalidate 옵션기입이 가능
+
 
      # Next.js의 module(작게 분리한 프로그램 개별 파일) 시스템
         : 일반적인 JS와 전혀 다를 것이 없으니, ES6 이후로 공식화 된 ES모듈의 import/export 방식 그대로 쓰면 됨
@@ -936,6 +1152,14 @@
                         : 해당 모듈에서 export한 모든 함수나 변수를 모듈로 가져오는 경우 사용하는 문법
                            -> But 이렇게 하면 어떤 변수나 함수를 사용하는지 알 수 없고, 불필요한 내용까지 가져오는 경우가 있어 성능이나 코드 구조 파악이나 모두 힘듦
 
+
+    # Next.js를 사용한 웹서비스 베포과정
+       1. 터미널에 npm run build 입력 
+           : react기반의 Next.js를 사용하여 개발한 코드들을 브라우저 친화적인 html, js, css 파일로 complie해 바꿔주는 작업
+
+       2. 서버로 사용한 물리적인 컴퓨터 및 AWS같은 클라우드의 터미널에 해당 소스를 복사해두고 터미널에서 npm run start 입력
+           : 이를 통해 실제로 유저 요청을 처리할 수 있는 Next.js 서버가 완성됨
+              -> 단! 도메인 같은건 따로 처리를 해둬서, DNS서버에서 도메인을 보고 해당 서버로 연결되도록 처리할 수 있게 해줘야함
 
     # Next.JS와 MongoDB 관련 특수지식들
        1. MongoDB 세팅은 일반적으로 Node.js에 하는 것과 차이 없음
@@ -1018,7 +1242,9 @@
 
                  4. try, catch 구문을 통한 예외처리를 통해, 에러시의 대처 완성도를 높일 수 있음
 
-                    ex) import { connectDB } from "@/util/database"
+                    ex) insert를 해야 하니, 유저가 <form>태그로 보낸 요청(request) 객체의 멤버객체 body를 통째로 넣어도 문제없음  
+                    
+                        import { connectDB } from "@/util/database"
                         
                         export default async function handler(요청, 응답) {
                           if (요청.method == 'POST'){
@@ -1036,6 +1262,30 @@
                           }
                         } 
 
+                    ex) delete할 데이터를 찾는 filters 객체를 paramter로 넣어야하니, 유저가 URL에 보낸 데이터인 요청(request) 객체의 멤버객체 query의 특정 멤버변수를 찾아서 기입해야 에러날 확률이 적음
+                    
+                        import { connectDB } from "@/util/database";
+                        import { ObjectId } from "mongodb";
+                        
+                        export default async function handler(요청, 응답) {
+                        
+                            try{
+                                console.log(요청.query);
+                        
+                                let client = await connectDB;
+                                const db = client.db('forum');
+                                let 데이터 = await db.collection('post').deleteOne( {_id : new ObjectId(요청.query.URL_parameter) } );
+                        
+                                console.log(데이터);
+                        
+                                응답.status(200).json('삭제완료');
+                        
+                            }catch(error){
+                                응답.status(500).json('서버나 DB에 문제가 발생했나 봅니다..');
+                            }
+                        
+                        }
+
               @ client -> server로 들어온 요청(request)에서 들어온 정보 가공하는 코드 작성법
                  : functional component의 1번째 parameter로 들어가는 요청(request)객체의 멤버변수나 메서드를 사용
                  
@@ -1046,18 +1296,15 @@
                     2) 요청.body
                         : client측에서 <form>태그를 통해 데이터를 입력하여 전송하여 API를 호출하는 경우, 서버측에서 유저가 보낸 데이터를 조회하기 위한 요청(request)객체의 멤버객체 body 
 
-                    3) 요청.params
-                        : client측에서 URL paramter 방식을 통해 API를 호출하는 경우, 서버측에서 유저가 보낸 데이터를 조회하기 위한 요청(request)객체의 멤버객체 params 
+                    3) 요청.query
+                        : client측에서 URL paramter 방식이나 queryString 방식을 통해 API를 호출하는 경우, 서버측에서 유저가 보낸 데이터를 조회하기 위한 요청(request)객체의 멤버객체 query 
+                           -> (참고) 웹서버에서 유저가 보냔 요청(request) 객체의 데이터를 쓰려면, props객체의 데이터 쓸 때처럼 멤버객체도 확실히 지정해주는게 좋음
 
-                          ex) URL 파라미터 예시
-                               : https://www.mydomainxxx.co.kr/detail/33/pw/222
+                               ex) queryString 예시
+                                    : https://www.mydomainxxx.co.kr/detail?id=33&pw=222
 
-                    4) 요청.query
-                        : client측에서 queryString 방식을 통해 API를 호출하는 경우, 서버측에서 유저가 보낸 데이터를 조회하기 위한 요청(request)객체의 멤버객체 query 
-
-                          ex) queryString 예시
-                               : https://www.mydomainxxx.co.kr/detail?id=33&pw=222
-
+                               ex) URL 파라미터 예시
+                                    : https://www.mydomainxxx.co.kr/detail/33/pw/222
 
               @ server -> client로 '응답(response)'을 보낼 때 필요한 코드 작성법
                  : functional component의 2번째 parameter로 들어가는 응답(response)객체의 멤버변수나 메서드를 사용
@@ -1084,30 +1331,33 @@
                 (자세한 내용은 Node.js 측에도 적어둠)
 
                 1) <form> 태그 사용
+                    : HTML의 공식 태그 중 하나인 <form>태그에 <input>태그를 사용하여 정보를 입력하고, action속성 안의 URL주소의 API를 호출하여 서버가 이를 실행하는데 쓸 수 있도록 데이터를 보내는 방식  
 
-                   ex) export default function Write(){
-                         return (
-                           <div>
-                             <h4>글작성</h4>
-                             <form action="/api/test" method="POST">
-                               <button type="submit">버튼</button>
-                             </form>
-                           </div>
-                         )
-                       }
-                     
-                   @ <form> 장/단점
+                      ex) export default function Write(){
+                            return (
+                              <div>
+                                <h4>글작성</h4>
+                                <form action="/api/test" method="POST">
+                                  <button type="submit">버튼</button>
+                                </form>
+                              </div>
+                            )
+                          }
+                        
+                      @ <form> 장/단점
 
-                      (장점) 
-                        a. html에서 공식으로 지원하는 형식이라 검증
-                        b. 웹서버로 POST, GET요청을 쉽게 날릴 수 있음
+                         (장점) 
+                           a. html에서 공식으로 지원하는 형식이라 검증
+                           b. 웹서버로 POST, GET요청을 쉽게 날릴 수 있음
 
-                      (단점)
-                        a. POST, GET요청 말고는 HTTP 메서드를 날릴 수 없음
-                        b. 새로고침이 무조건 동반되는 SSR 방식
-                           (= 전송을 끝날 때까지는 아무것도 못하는 동기적 작동 방식)
+                         (단점)
+                           a. POST, GET요청 말고는 HTTP 메서드를 날릴 수 없음
+                           b. 새로고침이 무조건 동반되는 SSR 방식
+                              (= 전송을 끝날 때까지는 아무것도 못하는 동기적 작동 방식)
 
                 2) ajax(Asynchronous JavaScript and XML) 기능 사용
+                    : ajax는 새로고침 없이, 비동기 방식으로 웹서버의 API를 JS나 XML을 사용한 코드로 호출할 수 있는 기술적 개념에 가까운 기능을 의미함
+                      (= ajax의 구현 방법은 정말 다양하지만, 현 시점에서는 ECMA 6버전 이후 promise객체 기반으로 제작된 fetch구문이나, 그 이전부터 높은 편의성과 역사로 이름을 떨친 axios가 존재   
 
                    @ ajax 장/단점
 
@@ -1115,28 +1365,290 @@
                         a. 웹서버에 내용을 전송해도 새로고침을 안해도 됨
                         b. 비동기적 데이터 교환이 이뤄짐 = 데이터 전송과 관련없이 화면이 유지되고 사용자는 조작이 가능
                             -> (참고!) 화면 전환없이 이뤄지는 요청과 리턴이기에 ajax를 통한 통신을 주고받는 기능에서는 다른 페이지로 연결하여 새로고침을 유발하는 redirect나 render 같은 함수를 API {}안에 써봐야 작동하지 않음.. 
-                        C. Js를 사용하는 Runtime 환경이면, 서버나 화면에서나 같은 방식으로 데이터를 주고받기 쉽다
+                        c. Js를 사용하는 Runtime 환경이면, 서버나 화면에서나 같은 방식으로 데이터를 주고받기 쉽다
+                        d. GET, POST 외의 다른 HTTP 메서드(PUT, DELETE, PATCH)도 받을 수 있음
 
                       (단점)
                         : 기본적으로 버튼을 지원하는 FORM 태그랑 다르게, JS의 이벤트리스너를 통해 스스로 버튼 동작과 기능을 연결시킬 줄 알아야 해서 좀 과정이 귀찮음
                           (= fetch API가 표준이니 이거는 사용할 줄 아는게 좋음)
 
-                3) URL의 일부로 데이터를 포함해서 href 속성값으로 url을 설정하여 API를 호출하여 서버로 무식하게 보냄..
-                    : 말 그대로 브라우저의 주소창에 해당하는 window.location.href의 속성값을 변경하는 방법으로 웹서버에 무식하게 호출을 보냄
+                   @ (참고) JSON 객체의 메서드
+                      : [배열] or {JS객체} -> JSON형태의 "문자열" 로 변환 or 역으로 JSON형태의 "문자열" -> [배열] or {JS객체} 로 파싱하는 역할의 도구들
 
-                      @ URL 직접사용 장/단점
+                         a. JSON.stringify( {JS객체} or [배열] )
+                             : parameter로 들어간 {JS객체} or [배열]을  JSON형태의 "문자열"로 변환하는 메서드
+                                -> (주의) BUT! {JS객체}의 메서드는 파싱 및 변환 과정에서 복구가 불가능해지니 주의
+
+                         b. JSON.parse ( JSON 형식의 "문자열" )
+                             : parameter로 들어간 JSON 형식의 "문자열" 을  {JS객체} or [배열]로 파싱하여 복구해주는 메서드
+                                -> {JS객체}의 메서드는 복구가 불가능
+
+                   @ fetch('URL명', {method : 'HTTP 메서드', body : '본문' , ... } )
+                      : ECMA 6에서 공식적으로 지원하는 Ajax API기능으로 promise 객체를 기반으로 만들어져, 수신성공/실패에 따른 콜백함수 처리를 쉽게 할 수 있음
+
+                       (fetch 문법)
+                         : promise객체를 기반으로 제작되었기에, URL에 따른 API호출을 시작으로 늘 성공/실패에 따른 콜백함수 처리를 해줘야함
+                            
+                           a. async / await 방식
+                               : Ajax 방식의 API호출 과정을 async 함수화시킨 모듈로 처리하고, 비동기적으로 작도하는 코드에 기다림의 질서를 부여할 await 처리를 해줌  
+
+                                 ex) async function submit() {
    
-                         (장점) 
-                           a. 추가적인 라이브러리 따위 없이, 간편하게 데이터를 보낼 수 있음
-                           b. (URL 파라미터의 경우) 그나마 보내는 데이터가 어떤 칼럼에서 나오는지를 가리기에 보안적인 면에서 나을수는 있음
+                                       // 1번째 await 포인트
+                                       let blob = await new Promise(resolve => canvasElem.toBlob(resolve, 'image/png'));
    
-                               ex) URL 파라미터 예시
-                                    : https://www.mydomainxxx.co.kr/detail/33/pw/222
+                                       // 2번째 await 포인트 : 웹서버에 API호출
+                                       let response = await fetch('/article/fetch/post/image', {
+                                         method: 'POST',
+                                         body: blob
+                                       });
+                                 
+                                       // 3번째 await 포인트 : 전송이 잘 되었다는 응답이 오고, 이미지 사이즈가 얼럿창에 출력됩니다.
+                                       let result = await response.json();
+                                       alert(result.message);
+                                     }
+
+                           b. then, catch, finally
+                               : Ajax 방식의 API호출 과정을 고전적으로 promise 체이닝 메서드 형식으로 실행
+
+                                 ex) function submit() {
+
+                                       canvasElem.toBlob(function(blob) {
+
+                                         fetch('/article/fetch/post/image', {
+                                           method: 'POST',
+                                           body: blob
+                                         })
+                                           .then(response => response.json())
+                                           .then(result => alert( JSON.stringify(result, null, 2) ) )
+
+                                       }, 'image/png');
+                                     }
+
+                       (fetch 사용법) 
+
+                         [1] API 요청
+                              : 사용할 fetch API의 방식을 정하고, 거기에 맞게 URL과 fetch 형식을 정함
+                                 -> ({ option 객체 }를 적어야 하는 경우) 
+                                      a. method  : GET 이외의 HTTP메서드를 쓸 경우
+                                      b. headers : client 측에서 header 영역을 따로 설정하고 싶은 경우 사용
+                                      c. body    : 웹서버로 데이터(문자열, Form객체, Blob이나 BufferSource, URLSearchParams)를 보내고 싶은 경우 
+                                                    -> (주의) {JS객체}, [배열]을 보내려도 '문자열'로 보내야 하므로, 반드시 JSON 형식으로 변환하여 보낼 것
+
+                         [2] API 응답
+                              : API의 요청에 웹서버가 성공적으로 응답한다면, 데이터를 응답(response)객체 형식으로 보내줌
+                                (async/await 형식에서는 변수가 이를 받는다면, then() catch() 형식은 무명콜백함수의 1번째 객체 parameter가 이를 받음)
+
+                       (fetch 응답(response) 객체의 구조) 
+
+                         [1] 멤버변수 (= properties)
+                              : 주로 메타 데이터에 해당하는 데이터를 가지고 있는 객체의 멤버변수 영역
+
+                                a. response.status  : 응답시의 HTTP 상태코드
+                                b. response.ok      : 응답 상태가 200과 299 사이에 있는 경우 true
+                                c. response.headers : 응답 데이터의 HTTP 헤더데이터가 담긴 변수
+
+                         [2] 메서드 
+                              : 웹서버의 API 응답에 대한 데이터의 본문을 파싱하기 위한 메서드
+                                (= 보통은 json으로 변환하게 될 것)
+                                   -> (주의사항)
+                                        1. fetch API에서는 응답을 받았으면, 반드시 해당 메서드들을 써서 서버가 보낸 응답객체의 body데이터를 파싱해줘야 client측이 알아먹을 수 있음
+                                        2. 단! 한번만 사용이 가능함 
+                                           (= 가장 먼저 실행한 메서드로 데이터는 파싱됨)
+
+                                a. response.text()        : 응답객체 body 본문을 텍스트 형태로 반환함
+                                b. response.json()        : 응답객체 body 본문을  파싱해 JSON 객체로 변경함
+                                c. response.formData()    : 응답객체 body 본문을 FormData 객체 형태로 반환
+                                d. response.blob()        : 응답객체 body 본문을  Blob(타입이 있는 바이너리 데이터) 형태로 반환
+                                e. response.arrayBuffer() : 응답을 ArrayBuffer(바이너리 데이터를 로우 레벨로 표현한 것) 형태로 반환
+
+                         ex) 이런식으로 응답객체의 프로퍼티와 메서드를 사용
+
+                             fetch('/URL')
+                             .then((응답)=>{
+                               if(응답.status == 200) {
+                                 return 응답.json()
+                               } else {
+                                 //서버가 에러코드 전송시 실행할코드
+                               }
+                             }).then((응답)=>{ 
+                               // 성공시 실행할코드
+                             })
+                             .catch((실패)=>{
+                               // 인터넷문제 등으로 실패시 실행할코드
+                               console.log(error)
+                             })
+
+                       (fetch 주의사항 모음)
+                         [1] fetch 요청시 {JS객체}, [배열]을 보내려도 '문자열'로 보내야 하므로, 반드시 JSON 형식으로 변환하여 보낼 것
+                         [2] fetch 요청시, option에 body속성을 넣어야 한다면, 반드시 데이터를 넣어야 함
+                         [3] fetch 요청시, POST 요청을 보낼 때 body속성값이 문자열이면 Content-Type 헤더가 text/plain;charset=UTF-8로 기본 설정됨
+                         [4] fetch 요청시, URL을 적을 때 URL parameter와 queryString 형식까지 포함해서 데이터를 보내는 거도 가능은 함
+                         [5] fetch API에서는 응답을 받았으면, 반드시 해당 메서드들을 써서 서버가 보낸 응답객체의 body데이터를 파싱해줘야 client측이 알아먹을 수 있음
+                         [6] fetch API에서는 응답 변환 메서드는 단! 한번만 사용이 가능함
+                             (= 가장 먼저 실행한 메서드로 데이터는 파싱됨)
+                         [7] server component를 사용한다면, fetch API를 사용할 것이 Nextjs 13부터는 권장됨 
+                              -> fetch에 특별한 기능이 추가되어 있기에 때문
+
+
+                3) URL의 일부로 데이터를 포함해서 href 속성값으로 url를 작성하여, 웹서버의 API를 호출해 무식하게 보냄..
+                    : 말 그대로 브라우저의 주소창에 해당하는 window.location.href의 속성값을 변경하는 방법으로 웹서버에 무식하게 호출을 보냄
+                       -> (중요) fetch API나 <form> 태그를 쓸 때도 GET형식을 쓴다는 가정하에 URL을 해당 형식에 맞춰 적는다면, 데이터를 보내는게 가능함
+
+                          ex) URL 파라미터 예시
+                               : https://www.mydomainxxx.co.kr/detail/33/pw/222
+       
+                          ex) queryString 예시
+                              : https://www.mydomainxxx.co.kr/detail?id=33&pw=222
+
+                   @ URL 직접사용 장/단점
    
-                               ex) queryString 예시
-                                   : https://www.mydomainxxx.co.kr/detail?id=33&pw=222
+                      (장점) 
+                        a. 추가적인 라이브러리 따위 없이, 간편하게 데이터를 보낼 수 있음
+                        b. (URL 파라미터의 경우) 그나마 보내는 데이터가 어떤 칼럼에서 나오는지를 가리기에 보안적인 면에서 나을수는 있음
    
-                         (단점)
-                           a. 이를 통해서는 GET방식의 호출 밖에 할 수 없음
-                           b. 새로고침이 무조건 동반되는 SSR 방식
-                           c. (라이브러리에 따라서는) POST 방식을 쓸 수도 있지만, 기본적으로 URL에 데이터를 포함해서 보내기에 보안이 씹망
+                      (단점)
+                        a. 이를 통해서는 GET방식의 호출 밖에 할 수 없음
+                        b. 새로고침이 무조건 동반되는 SSR 방식
+                        c. (라이브러리에 따라서는) POST 방식을 쓸 수도 있지만, 기본적으로 URL에 데이터를 포함해서 보내기에 보안이 씹망
+
+
+- Auth.js (Next-Auth 라이브러리)
+   : Next.JS 프레임워크 사용시, 회원기능을 구현함에 있어 JWT또는 OAuth를 매우 쉽게 만들 수 있게 도와주는 라이브러리
+      -> 라이브러리 설치 + 코드만 복사 붙여넣기 하면 여러가지 회원기능을 쉽게 구현 가능 
+
+         ex) OAuth 소셜 로그인, 아이디/비번 로그인, JWT, session 방식
+              -> DB adapter 기능을 이용하면, DB에 session을 저장해두는 식의 전통적인 유저 관리 
+
+    # Auth.js의 장/단점
+
+       (장점)
+         : 그냥 개발자 입장에서 쓰기 매우 쉬움
+
+       (단점) 
+         : ID/PW로 로그인하는 옵션을 켜둔 경우?
+            -> 제작팀에서는 보안이슈를 이유로 JWT 방식을 강제로 사용하게 제약을 걸어둠
+               (= session 방식은 사용 불가능)
+
+    # Auth.js 라이브러리 세팅
+      1. node.js와 Next.js는 당연히 필수
+      2. 작업폴더만들고 에디터로 오픈
+      3. 터미널에 npm install next-auth  입력
+      4. 'pages/api/auth/[...nextauth].js' 라는 경로에 [...nextauth].js 파일을 만들고, 보일러플레이트 코드를 작성해 둠
+           -> authOptions이란 JS객체는 로그인 정보를 담고 있는 객체로서, 다른 component에서 열람가능
+
+              ex) [...nextauth].js 파일의 보일러 플레이트 코드
+              
+                  import NextAuth from "next-auth";
+                  import GithubProvider from "next-auth/providers/github";
+                  
+                  export const authOptions = {
+                    providers: [
+                      플렛폼1명Provider({
+                        clientId: '플렛폼1에서 발급받은ID',
+                        clientSecret: '플렛폼1에서 발급받은Secret',
+                      }),
+              
+                      ... ,
+              
+                      플렛폼n명Provider({
+                        clientId: '플렛폼n에서 발급받은ID',
+                        clientSecret: '플렛폼n에서 발급받은Secret',
+                      }),
+                    ],
+                    secret : 'jwt생성시쓰는암호'
+                  };
+     
+                  export default NextAuth(authOptions); 
+
+    # component에서 로그인 된 유저의 정보를 출력해야 하는 경우
+       : (주의) 유저정보 또한 server component에서 유저정보 가져와서 client component로 전송해주는게 나을 수 있음
+           -> 다른 외부서버에 API를 호출하는 경우와 마찬가지로, side effect와 로딩의 우선순위를 고려해야 하는 CSR 환경에서 동작하는 useSession() 함수 또한 html 다 보여주고나서 한 박자 늦게 실행될 수 있기 때문
+
+              ex) Github의 경우는 유저정보를 조회하면 다음과 같은 user객체를 응답객체에 보내줌
+              
+                  {
+                    user: {
+                      name: '유저명',
+                      email: '이메일id@도메인.com',
+                      image: '이미지주소'
+                    }
+                  }
+
+              1. server component의 경우
+                  : 비동기 함수코드 getServerSession()를 사용하고, 로그인 정보를 담는 authOptions객체를 parameter로 담아서 실행
+                     -> (중요) next-auth 라이브러리에서 getServerSession() 함수를 모듈로 가져옴 + [...nextauth].js 파일에서 로그인 정보를 담는 authOptions객체를 모듈로 가져오는 작업 선행
+                  
+                        ex) import { authOptions } from "@/pages/api/auth/[...nextauth].js"
+                            import { getServerSession } from "next-auth"
+                            
+                            export default function Page(){
+       
+                              // session 정보를 가져옴
+                              let session = await getServerSession(authOptions)
+       
+                              if (session) {
+                                console.log(session)
+                              }
+                              ....
+                            }
+       
+              2. client component의 경우
+                  : useSession()라는 react hooks 함수를 사용하여 쉽게 로그인 정보 조회
+                     -> (중요) 단! client component인 [부모 component]에서 <SessionProvider>라는 component를 import 해오고, 이를 client component인 [자식 component]에 감싸야 사용 가능
+       
+                        ex) client component인 [부] layout.js 에서 [자]에 해당하는 모든 component를 <SessionProvider>로 감싼다면...
+                             -> (참고) 최상위 layout.js에서 회원기능에서 배울 getServerSession() 쓰면, 모든 페이지가 아마 동적 랜더링(dynamnic rendering)으로 동작할 수 있음
+       
+                            'use client'
+                            
+                            import { SessionProvider } from "next-auth/react"
+                            
+                            export default function Layout({ children }){
+       
+                              return (
+                                <SessionProvider>
+                                  {children}
+                                </SessionProvider>
+                              )
+                            }
+       
+                        ex) client component인 [자]에 해당하는 모든 component에서는 useSession()이라는 함수 하나로 로그인 정보를 보여줌
+       
+                            'use client'
+                            
+                            import { useSession } from 'next-auth/react'
+                            export default function Page(){
+       
+                              let session  = useSession();
+       
+                              if (session) {
+                                console.log(session)
+                              }
+                            }
+
+
+    # Auth.js 라이브러리에서 각 로그인 기능 구현
+
+      1. OAuth 로그인
+          : 어떤 유저의 A사이트에서의 조회 권한을 잠시 B사이트를 운영하는 쪽에서 빌리는 식으로, A사이트의 유저조회 API를 호출하는 과정을 정의하는 규칙을 의미하기에..
+             -> B사이트의 운영팀은 A사이트에서서 OAuth에 대한 사용허가를 받아야 함
+                (= 그 사용허가를 구분하는 기준이 B사이트 입장에서 clientID, clientSecret인 셈)
+
+         0) OAuth를 원하는 플랫폼에 clientID, clientSecret을 얻어내기 위한 작업을 실시
+
+            ex) Github로 예시
+                 a. 회원가입 후, 유저 탭 영역의 'setting' 클릭
+                 b. 좌측 하단 탭의 Developer settings -> New OAuth app 클릭
+                 c. 어떤 앱에 어떤 용도로 쓸지와, 요청에 대한 응답을 어디로 보내줄지에 대한 도메인도 입력
+                    (사실, 이 정보가 곧 API에 영향을 미치는건 아니니, 개인 레벨이면 대충써도 무방함)
+                 d. 발급받은 clientID, clientSecret를 잘 보관하기
+
+         1) OAuth 로그인은 JWT방식이 기본이라, 플랫폼 측의 서비스 ID, PW를 얻어서 각 clientID, clientSecret에 넣으면 완료
+             -> secret 멤버변수는 OAuth 로그인은 JWT방식이 기본이라는 점에서, 가져다 쓰는 개발자가 추가적으로 사용하는 salt같은 개념
+                (= 이거를 사용하면, 플랫폼측의 salt와 유저측의 salt들을 모두 알아야 로그인 정보 해킹이 된다는 점에서 더 골이 아프게 할 수 있음)
+
+         2) import { signIn, signOut } from 'next-auth/react' 와 같은 방식으로, next-auth/react 라이브러리의 로그인 및 로그아웃 함수를 모듈로 가져와서 사용
+             -> (참고) 주로 어떤 button의 클릭 이벤트로 구현될 경우가 많으니, react의 JSX문법으로 이벤트속성으로 이를 구현하니 보통 client component에서 해당 기능이 구현되는 경우가 많음
+
+         3) 기능 테스트를 해보면, 클릭 시 우리가 일반적으로 아는 각 플랙폼 사의 OAuth 로그인으로 들어가는 버튼들이 등장하며, 그걸 누르면 소셜로그인 진행

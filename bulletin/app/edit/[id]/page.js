@@ -14,6 +14,7 @@ export default async function Edit(props) {
           제목) <input name="title" defaultValue={게시물.title}  />
           내용) <input name="content" defaultValue={게시물.content} />
           <button type="submit">전송</button>
+          <input name="id" defaultValue={게시물._id} style={ {"visibility" : "hidden" } } />
         </form>
       </div>
     )

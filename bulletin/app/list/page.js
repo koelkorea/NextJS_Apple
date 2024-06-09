@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { connectDB } from "@/util/database";
 import DetailLink from "./DetailLink";
+import ListItem from "./ListItem";
+import { connectDB } from "@/util/database";
 
 export default async function List() {
 
@@ -10,20 +10,7 @@ export default async function List() {
 
     return (
         <div className="list-bg">
-            {
-                
-                게시물.map((배열요소, 인덱스)=>{
-                    return(
-                        <div className="list-item" key={인덱스}>
-                            <Link href={ `/detail/${게시물[인덱스]._id}` } >
-                                <h4>{게시물[인덱스].title}</h4>
-                            </Link>
-                            <Link href={'/edit/' + 게시물[인덱스]._id} className="list-btn">✏️</Link>
-                            <p>{게시물[인덱스].content}</p>
-                        </div>
-                    )
-                })
-            }
+            <ListItem 게시물={게시물}/>
             <DetailLink/>
         </div>
     )
