@@ -4,7 +4,8 @@ import Link from "next/link";
 import { authOptions } from "@/pages/api/auth/[...nextauth].js"
 import { getServerSession } from "next-auth"
 import LoginBtn from "./LoginBtn.js";
-import LogoutBtn from "./LogoutBtn.js"
+import LogoutBtn from "./LogoutBtn.js";
+import RegisterBtn from "./RegisterBtn";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }) {
 
           {session == null ?  
             <LoginBtn></LoginBtn> : <LogoutBtn></LogoutBtn>}
+          <RegisterBtn></RegisterBtn>
         </div>  
         {children}
       </body>

@@ -1526,9 +1526,10 @@
          : 그냥 개발자 입장에서 쓰기 매우 쉬움
 
        (단점) 
-         : ID/PW로 로그인하는 옵션을 켜둔 경우?
-            -> 제작팀에서는 보안이슈를 이유로 JWT 방식을 강제로 사용하게 제약을 걸어둠
-               (= session 방식은 사용 불가능)
+         1) 기본적으로 모든 방식이 JWT로 동작하게 설계됨
+         2) 심지어 ID/PW로 로그인하는 옵션을 켜둔 경우?
+             -> 제작팀에서는 보안이슈를 이유로 JWT 방식을 강제로 사용하게 제약을 걸어둠
+                (= session 방식은 사용 불가능)
 
     # Auth.js 라이브러리 세팅
       1. node.js와 Next.js는 당연히 필수
@@ -1566,33 +1567,46 @@
            -> 다른 외부서버에 API를 호출하는 경우와 마찬가지로, side effect와 로딩의 우선순위를 고려해야 하는 CSR 환경에서 동작하는 useSession() 함수 또한 html 다 보여주고나서 한 박자 늦게 실행될 수 있기 때문
 
               ex) Github의 경우는 유저정보를 조회하면 다음과 같은 user객체를 응답객체에 보내줌
-              
-                  {
-                    user: {
-                      name: '유저명',
-                      email: '이메일id@도메인.com',
-                      image: '이미지주소'
-                    }
-                  }
+                   -> (참고) DB adapter를 사용하여, session 로그인 기능을 쓰는 경우 expire라는 멤버변수도 포함
+
+                      {
+                        user: {
+                          name: '유저명',
+                          email: '이메일id@도메인.com',
+                          image: '이미지주소'
+                        }
+                        
+                        // session 로그인 사용시
+                        expire : '만료 날짜'
+                      }
 
               1. server component의 경우
-                  : 비동기 함수코드 getServerSession()를 사용하고, 로그인 정보를 담는 authOptions객체를 parameter로 담아서 실행
-                     -> (중요) next-auth 라이브러리에서 getServerSession() 함수를 모듈로 가져옴 + [...nextauth].js 파일에서 로그인 정보를 담는 authOptions객체를 모듈로 가져오는 작업 선행
-                  
-                        ex) import { authOptions } from "@/pages/api/auth/[...nextauth].js"
-                            import { getServerSession } from "next-auth"
-                            
-                            export default function Page(){
-       
-                              // session 정보를 가져옴
-                              let session = await getServerSession(authOptions)
-       
-                              if (session) {
-                                console.log(session)
-                              }
-                              ....
-                            }
-       
+                  : 비동기 함수코드 getServerSession()를 사용하나, parameter로 들어가는 내용이 JS파일 종류마다 변경
+
+                  1) component JS파일 내부에서 유저의 정보를 출력해야 하는 경우
+                      : getServerSession(authOptions) 방식으로 호출
+                         -> (중요) next-auth 라이브러리에서 getServerSession() 함수를 모듈로 가져옴 + [...nextauth].js 파일에서 로그인 정보를 담는 authOptions객체를 모듈로 가져오는 작업 선행
+                      
+                            ex) import { authOptions } from "@/pages/api/auth/[...nextauth].js"
+                                import { getServerSession } from "next-auth"
+ 
+                                export default function Page(){
+
+                                  // session 정보를 가져옴
+                                  let session = await getServerSession(authOptions)
+
+                                  if (session) {
+                                    console.log(session)
+                                  }
+                                  ....
+                                }
+                                
+                  2) API JS파일 내부에서 유저의 정보를 출력해야 하는 경우
+                      : getServerSession(요청, 응답, authOptions) 방식으로 호출
+                         -> (중요) authOptions객체를 모듈로 가져오는 작업 + 함수형식으로 API 작성시 사용되는 요청(request), 응답(response) parameter까지 같이 포함시킴
+                      
+                            ex) 
+
               2. client component의 경우
                   : useSession()라는 react hooks 함수를 사용하여 쉽게 로그인 정보 조회
                      -> (중요) 단! client component인 [부모 component]에서 <SessionProvider>라는 component를 import 해오고, 이를 client component인 [자식 component]에 감싸야 사용 가능
@@ -1635,20 +1649,94 @@
              -> B사이트의 운영팀은 A사이트에서서 OAuth에 대한 사용허가를 받아야 함
                 (= 그 사용허가를 구분하는 기준이 B사이트 입장에서 clientID, clientSecret인 셈)
 
-         0) OAuth를 원하는 플랫폼에 clientID, clientSecret을 얻어내기 위한 작업을 실시
+          @ OAuth 로그인 기능 구현 과정
+          
+            0) OAuth를 원하는 플랫폼에 clientID, clientSecret을 얻어내기 위한 작업을 실시
+  
+               ex) Github로 예시
+                    a. 회원가입 후, 유저 탭 영역의 'setting' 클릭
+                    b. 좌측 하단 탭의 Developer settings -> New OAuth app 클릭
+                    c. 어떤 앱에 어떤 용도로 쓸지와, 요청에 대한 응답을 어디로 보내줄지에 대한 도메인도 입력
+                       (사실, 이 정보가 곧 API에 영향을 미치는건 아니니, 개인 레벨이면 대충써도 무방함)
+                    d. 발급받은 clientID, clientSecret를 잘 보관하기
+  
+            1) OAuth 로그인은 JWT방식이 기본이라, 플랫폼 측의 서비스 ID, PW를 얻어서 각 clientID, clientSecret에 넣으면 완료
+                -> secret 멤버변수는 OAuth 로그인은 JWT방식이 기본이라는 점에서, 가져다 쓰는 개발자가 추가적으로 사용하는 salt같은 개념
+                   (= 이거를 사용하면, 플랫폼측의 salt와 유저측의 salt들을 모두 알아야 로그인 정보 해킹이 된다는 점에서 더 골이 아프게 할 수 있음)
+  
+            2) import { signIn, signOut } from 'next-auth/react' 와 같은 방식으로, next-auth/react 라이브러리의 로그인 및 로그아웃 함수를 모듈로 가져와서 사용
+                -> (참고) 주로 어떤 button의 클릭 이벤트로 구현될 경우가 많으니, react의 JSX문법으로 이벤트속성으로 이를 구현하니 보통 client component에서 해당 기능이 구현되는 경우가 많음
+  
+            3) 기능 테스트를 해보면, 클릭 시 우리가 일반적으로 아는 각 플랙폼 사의 OAuth 로그인으로 들어가는 버튼들이 등장하며, 그걸 누르면 소셜로그인 진행
 
-            ex) Github로 예시
-                 a. 회원가입 후, 유저 탭 영역의 'setting' 클릭
-                 b. 좌측 하단 탭의 Developer settings -> New OAuth app 클릭
-                 c. 어떤 앱에 어떤 용도로 쓸지와, 요청에 대한 응답을 어디로 보내줄지에 대한 도메인도 입력
-                    (사실, 이 정보가 곧 API에 영향을 미치는건 아니니, 개인 레벨이면 대충써도 무방함)
-                 d. 발급받은 clientID, clientSecret를 잘 보관하기
+      2. OAuth + session 방식 로그인 (DB adapter 기능 활용)
+          : DB에 유저 회원정보를 보관하고, 로그인시 그 정보가 일치하면?
+             -> 입장권에 해당하는 session(유효한 날짜까지만 사용가능 + 여차하면 DB에서 이를 지워 통제가능)을 유저에게 주고, 서버에 요청을 보낼때마다 이를 체크하는 방식 
 
-         1) OAuth 로그인은 JWT방식이 기본이라, 플랫폼 측의 서비스 ID, PW를 얻어서 각 clientID, clientSecret에 넣으면 완료
-             -> secret 멤버변수는 OAuth 로그인은 JWT방식이 기본이라는 점에서, 가져다 쓰는 개발자가 추가적으로 사용하는 salt같은 개념
-                (= 이거를 사용하면, 플랫폼측의 salt와 유저측의 salt들을 모두 알아야 로그인 정보 해킹이 된다는 점에서 더 골이 아프게 할 수 있음)
+          @ (필수) MongoDB의 adapter 기능을 설정 과정
+             : MongoDB가 아니더라도 Next.JS 프레임워크에서 Auth.JS로 session 로그인 기능을 구현하려면, 반드시 사용할 DB의 adapter 기능을 활성화시킬 뭔가가 필요함
 
-         2) import { signIn, signOut } from 'next-auth/react' 와 같은 방식으로, next-auth/react 라이브러리의 로그인 및 로그아웃 함수를 모듈로 가져와서 사용
-             -> (참고) 주로 어떤 button의 클릭 이벤트로 구현될 경우가 많으니, react의 JSX문법으로 이벤트속성으로 이를 구현하니 보통 client component에서 해당 기능이 구현되는 경우가 많음
+               1) 터미널에 npm install @next-auth/mongodb-adapter을 입력하여, MongoDB의 adapter 관련 라이브러리를 설치하자
+                   -> 설치에 문제가 생긴다면 상위 버전의 mongoDB 지우고 npm install mongodb@4를 입력하여, 4 ~ 5 버전의 MongoDB 라이브러리를 사용하게 하자
 
-         3) 기능 테스트를 해보면, 클릭 시 우리가 일반적으로 아는 각 플랙폼 사의 OAuth 로그인으로 들어가는 버튼들이 등장하며, 그걸 누르면 소셜로그인 진행
+               2) DB adapter 자체가 session 관련 기능을 수행할 컬랙션(= 테이블)을 추가하는 것이기에, 해당 컬랙션들이 위치할 Database를 결정해야 함
+                  (= MongoDB 접속 URL에 ?가 있는 부분 왼쪽에, 원하는 Database명을 넣으면 session 관련 컬랙션들이 생길 위치를 해당 Database명에 지정 완료)
+                      -> 안 적으면, 기본값 TEST라는 DB명이 생겨나서, 추후 관련 collection들을 보관
+
+                         ex) const url = 'mongodb+srv://아이디:비밀번호@클러스터명.도메인/Database명?DretryWrites=true&w=majority'
+
+               3) [...nextauth].js 파일에, authOptions이 저장하는 로그인 정보를 가지는 JS객체에 adapter 프로퍼티를 추가하고, MongoDBAdapter(connectDB)를 대입함
+                   -> MongoDBAdapter(DB연결정보) 함수는 해당 DB연결정보를 사용하여, MongoDB adepter기능을 사용한다는 것
+                      (= connectDB가 의미하는건 database.js에서 export한 MongoDB에 연결한 보일러플레이트의 결과물)
+
+                      ex) adapter : MongoDBAdapter(connectDB)를 추가하여, DB adapter기능을 활성화하여 session방식 로그인을 수행준비
+                         
+                          import { connectDB } from "@/util/database";
+                          import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
+                          import NextAuth from "next-auth";
+                          import GithubProvider from "next-auth/providers/github";
+                          
+                          export const authOptions = {
+                            providers: [
+                              GithubProvider({
+                                clientId: 'Github에서발급받은ID',
+                                clientSecret: 'Github에서발급받은Secret',
+                              }),
+                            ],
+                            secret : '어쩌구'
+                            adapter : MongoDBAdapter(connectDB), //추가함
+                          };
+                          
+                          export default NextAuth(authOptions); 
+
+               4) 웹서버를 돌리고, MongoDB의 collection을 보면 session 관련 기능을 위한 accounts, sessions, users 3개 컬렉션들을 생성함을 확인가능
+                   -> (생성된 collection 설명)
+
+                       a. users   
+                           : 유저들의 회원정보 보관하는 컬랙션 (= PK는 이메일로 설정) 
+                              
+                              ex) test@naver.com 만 등록 
+
+                       b. sessions 
+                           : 로그인 유효기간을 포함한, 현재 로그인된 유저들의 session 정보들이 모여있는 컬랙션
+
+                       c. accounts
+                           : 유저들이 생성한 모든 계정 보관하는 컬랙션 
+
+                              ex) test@naver.com라는 유저는 1명이나, 그 계정은 플랫폼에 따라 여러개가 있음을 기록
+                                  (= 1명의 유저는 여러개의 계정을 가지고 있을 수 있어, 이메일 중복 가능성이 높음)
+                              
+                                  test@naver.com + Github이 써있는 document 
+                                  test@naver.com + Google이 써있는 document 
+
+          @ DB adapter 기능을 통한 session 로그인 기능 로직 과정
+
+            1) 첫 로그인시 자동으로 유저를 회원가입 시킴
+               (= 회원가입 X.. 로그인 하자마자 DB에 회원정보를 DB의 관련 컬렉션 및 테이블에 보관)
+
+            2) 로그인시 자동으로 유저가 언제 로그인했는지에 대한 session정보를 DB의 관련 컬렉션 및 테이블에 보관
+
+            3) 웹서버에서 지금 로그인된 유저정보가 필요하면, DB에 있던 session컬렉션 및 테이블의 정보를 조회해서 가져옴 
+               (= JWT를 분석하지 않는다는 것)
+
+            4) 로그아웃시 해당 유저의 session 정보는 DB에서 삭제되거나 사용완료 처리 

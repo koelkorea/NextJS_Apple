@@ -21,18 +21,19 @@ export default function ListItem(props) {
                             {/* 수정버튼 */}
                             <Link href={'/edit/' + 게시물[인덱스]._id} className="list-btn">✏️</Link>
 
-                            {/* 삭제버튼 */}
+                            {/* 삭제버튼 
+                                (숙제) 관리자 권한을 가진 유저는 모든 글을 삭제가능하게 서버기능을 업그레이드 */}
                             <button onClick={(e)=>{
                                 fetch('/api/post/delete', { 
                                     method : 'DELETE', 
                                     body : 배열요소._id
                                 })
-                                .then( (result, reject) => {
+                                .then( (result) => {
                                     if(result.status == 200) {
                                         return result.json()
                                     } else {
                                         //서버가 에러코드전송시 실행할코드
-                                        return reject(new Error("API요청 중 문제 발생!"));
+                                        throw new Error("API요청 중 문제 발생! : " + result.json());
                                     }
                                 })
                                 .then( (result) => {
@@ -47,6 +48,7 @@ export default function ListItem(props) {
                                 .catch((error)=>{
                                     //인터넷문제 등으로 실패시 실행할코드
                                     console.log(error)
+                                    alert(error);
                                 })
                             }}>🗑️</button>
 
@@ -58,7 +60,7 @@ export default function ListItem(props) {
                                         return result.json()
                                     } else {
                                         //서버가 에러코드전송시 실행할코드
-                                        return reject(new Error("API요청 중 문제 발생!"));
+                                        throw new Error("API요청 중 문제 발생! : " + result.json());
                                     }
                                 })
                                 .then( (result) => {
@@ -73,6 +75,7 @@ export default function ListItem(props) {
                                 .catch((error)=>{
                                     //인터넷문제 등으로 실패시 실행할코드
                                     console.log(error)
+                                    alert(error);
                                 })
                             }}>🗑️</button>
 
@@ -84,7 +87,7 @@ export default function ListItem(props) {
                                         return result.json()
                                     } else {
                                         //서버가 에러코드전송시 실행할코드
-                                        return reject(new Error("API요청 중 문제 발생!"));
+                                        throw new Error("API요청 중 문제 발생! : " + result.json());
                                     }
                                 })
                                 .then( (result) => {
@@ -99,6 +102,7 @@ export default function ListItem(props) {
                                 .catch((error)=>{
                                     //인터넷문제 등으로 실패시 실행할코드
                                     console.log(error)
+                                    alert(error);
                                 })
                             }}>🗑️</button>
                         </div>
