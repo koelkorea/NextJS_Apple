@@ -27,10 +27,28 @@
        : 서버에서 클라이언트로 보내는 메시지이며, 클라이언트가 임시로 저장하는 데이터
           -> 이걸 id, 비번등을 기반으로 특정 문자열과 조합하여 암호화한 json 데이터를 메시지로 보냈다는 점에서.. JSON Web Token이라 함
 
-    # session의 장/단점 
+    # JWT의 장/단점 
        (장점) 매번 GET/POST 요청할 때 마다 DB를 조회할 필요 X
        (단점) 제대로 만들어진 JWT 자체를 훔쳐서 쓰면 답이 없음.. 훔친거도 디코딩하면 결국 제대로 동작하니.. 그렇다고 이미 주어진 저장된 JWT를 소멸시킬 수도 없음
+               -> 그래서 보통 짧게 유효기간을 유지하고, 기간이 다 지나면 새로운 입장권을 자동으로 발급하는 방식을 취하기도 함
 
+    # JWT 재발급(refresh) 로직 (= session 방식을 jwt에 적용)
+       : client 측에서 재발급 토큰(refresh token)을 보내면, server측이 이를 검토 후 새로운 JWT 입장 토큰(access token)을 보내주는 식
+          -> 재발급 토큰(refresh token)은 session 데이터와 같이 DB에도 따로 저장되는 방식이라, session의 경우처럼 탈취당해도 서버에서 대응은 가능함
+
+             ex) 다른 IP에서 제출된 refresh token이 밝혀짐 or 이미 사용했던 refresh token을 또 사용하는 유저를 발견시 access token 발급 제한 (= refresh token rotation) 
+                  -> 이게 다 session처럼 DB에 refresh token들이 기록되기 때문에 가능한 것
+
+          @ JWT 재발급 토큰(refresh token) 관련 유의사항
+          
+            1) 예전 JWT형식의 access token을 보내면 새로운 access token을 보내면 안 되는 이유
+                : 애초에 그거 탈취 당하면 노답이라 유효기간 줄이고 재발급을 시키는건데, 이러면 결국 예전 access token을 가지고 있을 때랑 다른게 없음
+
+            2) JWT 재발급 토큰(refresh token)과 순수 session 방식의 차이
+                : session 방식은 client가 API를 호출될때마다 이를 조회하지만, JWT 재발급 토큰(refresh token)은 유효기간만큼의 간격(interval)을 두고 DB 조회하기에 부담이 덜함
+
+            3) http only cookie 같은거에 JWT나 재발급 토큰(refresh token)의 데이터를 저장하면, 변조가 불가능해서 데이터 검증할 때 믿을 수 있을까?
+                -> JS 코드로 조작이 어려워질 뿐이지, 브라우저 개발자 도구 켜면 확인하고 결국 그 데이터도 수정가능해서 큰 의미가 없음
 
 - hashing(일종의 암호화 알고리즘)
    : 어떤 문제를 알고리즘을 통해 보고 원본을 유추할 수 없는 랜덤한 문자로 바꾸는 작업 자체를 지칭

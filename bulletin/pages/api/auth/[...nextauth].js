@@ -4,14 +4,67 @@ import NextAuth from "next-auth";
 import GithubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from 'bcrypt';
+import axios from 'axios';
+
+// refresh AccessToken을 provider측인 github에요청
+async function refreshAccessToken(token) {
+
+    // 1. access token 재발급해달라고 POST요청
+    const url = 'https://github.com/login/oauth/access_token';
+
+    const params = {
+        grant_type: 'refresh_token',
+        refresh_token: token.refreshToken,
+        client_id: process.env.GITHUB_APP_ID,
+        client_secret: process.env.GITHUB_APP_SECRET,
+    };
+
+    // 반드시 header의 내용도 붙여서 보내야 404에러가 뜨지않음
+    const res = await axios.post(url, null, {            
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
+        },
+        params : params 
+    })
+    const refreshedTokens = await res.data
+
+    if (res.status !== 200) {
+        console.log('실패', refreshedTokens)
+    }
+
+    // 2. 재발급한거 출력해보기 
+    console.log('토큰 재발급한거 : ')
+    console.log(refreshedTokens)
+    // access_token=ghu_8afeApnRAkzkBYDmshCKqq6uyKJunA1EScAS
+    // &expires_in=28800
+    // &refresh_token=ghr_IZNb9vbPyu8FnSpnP1fLP0DQPq1EVH2JLB6HMOjgBaeGbZSo3dHJihM46QM5cX1odrOUYe1OhZxc
+    // &refresh_token_expires_in=15811200
+    // &scope=
+    // &token_type=bearer   
+
+    // 3. 이걸로 새로운 토큰 만들어서 return 해주기 
+    let data = new URLSearchParams(refreshedTokens);
+
+    if (data.get('error') == null){
+        return {
+            ...token,
+            accessToken: data.get('access_token'),
+            accessTokenExpires: Math.round(Date.now() / 1000) + Number(data.get('expires_in')),
+            refreshToken: data.get('refresh_token')
+        }
+    } else {
+        return token
+    }
+} 
 
 export const authOptions = {
     providers: [
 
         // 깃허브 AUTH 관련 정보
         GithubProvider({
-            clientId: process.env.GITHUB_ID,
-            clientSecret: process.env.GITHUB_SECRET,
+            clientId: process.env.GITHUB_OAUTH_ID,
+            clientSecret: process.env.GITHUB_OAUTH_SECRET,
         }),
 
         // 로그인 화면과 로그인 API 요청시 검토해야할 부분을 자동화시켜주는 메서드
@@ -81,5 +134,76 @@ export const authOptions = {
     secret : process.env.NEXT_AUTH_SECRET,
     adapter : MongoDBAdapter(connectDB), //추가함
 };
+
+
+// [refresh 관련 코드] 안 쓸 때는 주석처리
+// export const authOptions = {
+
+//     providers: [
+
+//         // 깃허브 AUTH 관련 정보
+//         GithubProvider({
+//             clientId: process.env.GITHUB_APP_ID,
+//             clientSecret: process.env.GITHUB_APP_SECRET,
+//         }),
+
+//     ],
+
+//     // 기간설정은 무시됨, github은 access token 유효기간 8시간, refresh token 유효기간 6개월 
+//     jwt: {
+//         maxAge: 60
+//     },
+
+//     callbacks: {
+
+//         // JWT 사용할 때마다 실행됨, return 오른쪽에 뭐 적으면 그걸 JWT로 만들어서 유저에게 보내줌
+//         async jwt({ token, account, user }) {
+//             console.log('account', account);
+//             console.log('user', user);
+//             console.log('token', token);
+    
+//             // 1. 첫 JWT 토큰 만들어주기 (첫 로그인시에만 실행)
+//             if (account && user) {
+
+//                 return {
+//                     accessToken: account.access_token,
+//                     refreshToken: account.refresh_token, 
+//                     accessTokenExpires: account.expires_at,
+//                     user,
+//                 }
+//             }
+    
+//             // 2. 남은 시간이 임박한 경우 access token 재발급하기 
+//             //     -> 지금은 개발중이라 8시간 - 10초 남았을 때 재발급중
+//             let 남은시간 = token.accessTokenExpires - Math.round(Date.now() / 1000);
+
+//             if (남은시간 < (60 * 60 * 8 - 10) ) {  
+
+//                 console.log('유효기간 얼마안남음')
+
+//                 // 3. 깃헙에게 재발급해달라고 조르는 비동기 함수  refreshAccessToken() 
+//                 let 새로운JWT = await refreshAccessToken(token) 
+
+//                 console.log('새로운 JWT : ', 새로운JWT)
+
+//                 return 새로운JWT
+//             } else {
+//                 return token
+//             }
+//         },
+
+//         // 4. 유저 세션이 조회될 때 마다 실행되는 코드
+//         //    -> getServerSession 실행시 토큰에 있던 어떤 정보 뽑아서 컴포넌트로 보내줄지 결정가능  
+//         session: async ({ session, token }) => {
+//             session.user = token.user
+//             session.accessToken = token.accessToken
+//             session.accessTokenExpires = token.accessTokenExpires
+//             session.error = token.error
+//             return session
+//         },
+//     },
+
+//     secret : process.env.NEXT_AUTH_SECRET,
+// };
 
 export default NextAuth(authOptions); 
