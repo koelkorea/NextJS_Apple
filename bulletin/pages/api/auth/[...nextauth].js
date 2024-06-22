@@ -36,9 +36,9 @@ async function refreshAccessToken(token) {
     // 2. 재발급한거 출력해보기 
     console.log('토큰 재발급한거 : ')
     console.log(refreshedTokens)
-    // access_token=ghu_8afeApnRAkzkBYDmshCKqq6uyKJunA1EScAS
+    // access_token_ = access 토큰 난수
     // &expires_in=28800
-    // &refresh_token=ghr_IZNb9vbPyu8FnSpnP1fLP0DQPq1EVH2JLB6HMOjgBaeGbZSo3dHJihM46QM5cX1odrOUYe1OhZxc
+    // &refreshtoken_ = refreshtoken 토큰 난수
     // &refresh_token_expires_in=15811200
     // &scope=
     // &token_type=bearer   
