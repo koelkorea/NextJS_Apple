@@ -1771,17 +1771,17 @@
                     providers: [
                       플렛폼1명Provider({
                         clientId: '플렛폼1에서 발급받은ID',
-                        clientSecret: process.env.GITHUB_APP_SECRET,
+                        clientSecret: '플렛폼1에서 발급받은Secret',
                       }),
               
                       ... ,
               
                       플렛폼n명Provider({
                         clientId: '플렛폼n에서 발급받은ID',
-                        clientSecret: process.env.GITHUB_APP_SECRET,
+                        clientSecret: '플렛폼n에서 발급받은Secret',
                       }),
                     ],
-                    secret : process.env.SECRET <- jwt생성시 쓰는 암호
+                    secret : 'jwt생성시쓰는암호'
                   };
      
                   export default NextAuth(authOptions); 
@@ -1926,10 +1926,10 @@
                             providers: [
                               GithubProvider({
                                 clientId: 'Github에서발급받은ID',
-                                clientSecret: process.env.GITHUB_APP_SECRET,
+                                clientSecret: 'Github에서발급받은Secret',
                               }),
                             ],
-                            secret : process.env.SECRET
+                            secret : '어쩌구'
                             adapter : MongoDBAdapter(connectDB), //추가함
                           };
                           
@@ -2046,7 +2046,7 @@
                    providers: [
                      GithubProvider({
                        clientId: 'Github에서 발급받은 ID',
-                       clientSecret: process.env.GITHUB_APP_SECRET,
+                       clientSecret: 'Github에서 발급받은 Secret',
                      }),
                  
                      CredentialsProvider({
@@ -2097,7 +2097,7 @@
                    },
                  
                    adapter: MongoDBAdapter(connectDB),
-                   secret: process.env.SECRET
+                   secret: 'qwer1234'  
                  };
                  export default NextAuth(authOptions); 
 
@@ -2305,9 +2305,9 @@
                                  console.log('토큰 재발급한거 : ')
                                  console.log(refreshedTokens)
                                  
-                                 // access_token = access 토큰 난수
+                                 // access_token=ghu_8afeApnRAkzkBYDmshCKqq6uyKJunA1EScAS
                                  // &expires_in=28800
-                                 // &refresh_token = refreshtoken_ 토큰 난수
+                                 // &refresh_token=ghr_IZNb9vbPyu8FnSpnP1fLP0DQPq1EVH2JLB6HMOjgBaeGbZSo3dHJihM46QM5cX1odrOUYe1OhZxc
                                  // &refresh_token_expires_in=15811200
                                  // &scope=
                                  // &token_type=bearer   
