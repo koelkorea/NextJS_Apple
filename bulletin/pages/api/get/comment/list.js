@@ -1,6 +1,4 @@
 import { connectDB } from "@/util/database";
-import { authOptions } from "../../auth/[...nextauth]";
-import { getServerSession } from "next-auth";
 import { ObjectId } from "mongodb";
 
 export default async function handler(요청, 응답) {
