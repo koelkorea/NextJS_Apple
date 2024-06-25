@@ -30,8 +30,8 @@ export default async function RootLayout({ children }) {
           <Link href="/list">List</Link> 
 
           {session == null ?  
-            <LoginBtn></LoginBtn> : <LogoutBtn></LogoutBtn>}
-          <RegisterBtn></RegisterBtn>
+            <LoginBtn/> : <LogoutBtn/>}
+          <RegisterBtn/>
         </div>  
         {children}
       </body>

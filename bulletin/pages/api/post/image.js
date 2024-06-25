@@ -3,8 +3,8 @@ import aws from 'aws-sdk'
 export default async function handler(요청, 응답){
 
     aws.config.update({
-        accessKeyId: process.env.S3_ACCESS_KEY,
-        secretAccessKey: process.env.S3_SECRET_KEY,
+        accessKeyId: process.env.S3_ACCESS_KEY_ID,
+        secretAccessKey: process.env.S3_SERCET_ACCESS_KEY,
         region: 'ap-northeast-2',
         signatureVersion: 'v4',
     })

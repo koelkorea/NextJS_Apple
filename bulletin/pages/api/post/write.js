@@ -21,7 +21,7 @@ export default async function handler(요청, 응답) {
             let client = await connectDB;
             const db = client.db('forum');
             // let 데이터 = await db.collection('post').insertOne( 요청.body );
-            let 데이터 = await db.collection('post').insertOne( {title : 요청.body.title, content : 요청.body.content, author : session.user.email} );
+            let 데이터 = await db.collection('post').insertOne( {title : 요청.body.title, content : 요청.body.content, imageURL : 요청.body.image , author : session.user.email} );
 
             응답.redirect(302, '/list')
         }catch(error){
