@@ -1934,8 +1934,116 @@
                         c. (라이브러리에 따라서는) POST 방식을 쓸 수도 있지만, 기본적으로 URL에 데이터를 포함해서 보내기에 보안이 씹망
 
 
-    # Next.js에서 미들웨어(middleware) 기능 제작 
+    # Next.js에서 미들웨어(middleware) 기능 제작하는 용도의 middleware.js
 
+     @ 미들웨어(middleware)
+        : 웹서버(server)의 API가 클라이언트(client)의 요청(request)으로 호출될 시, 응답(response)되기 전에 그 중간선상에서 간섭하여 실행되는 코드를 큰 틀에서 통칭
+           -> request - middleware - response의 순서를 지킨다고 생각하면 됨
+
+              ex) API를 실행하기 전에, 현재 요청한 유저가 login을 한 상태인지 API를 응답하기 전에 실행하는 코드 및 함수 내용
+
+     @ middleware.js 제작 및 사용법
+        : app 폴더에 middleware.js를 만들고, funcional compoenent를 만들어서 미들웨어(middleware)의 내용을 입력하면 끝
+
+          ex) import { NextResponse } from 'next/server'
+
+              export async function middleware(request) {
+                console.log(request.nextUrl)  //유저가 요청중인 URL 출력해줌
+                console.log(request.cookies)  //유저가 보낸 쿠키 출력해줌
+                console.log(request.headers)  //유저의 headers 정보 출력해줌 
+                NextResponse.next()  //통과
+                NextResponse.redirect()  //다른페이지 이동
+                NextResponse.rewrite()  //다른페이지 이동
+              } 
+
+     @ middleware.js 제작시 사용 가능한 {js객체} request, NextResponse
+
+        1. request
+            : middleware.js 파일의 funcional component의 parameter로 기입 가능한 {js객체}로 API를 요청한 client측의 정보를 property로 담고 있음
+
+               1) nextUrl
+                   : client측에서 요청한 서버의 URL에 관련된 {JS객체} 출력
+                      -> pathname
+                           : client가 요청한 URL을 담는 property
+                             (String.startwith('문자열')과 함께하면, SQL의 LIKE 연산자를 통한 시작문자 기준으로 URL을 검증하고 boolean 값으로 반환 받을 수 있음)
+
+               2) cookies
+                   : client측에서 보낸 쿠키 내용 출력
+
+               3) headers
+                   : client측에서 보낸 headers 정보 출력
+                     
+                     ex) 이전 방문 페이지, 사용하는 OS, 사용하는 브라우저, 언어, IP 등
+
+        2. NextResponse 
+            : Next js에서 제공하는 next/server 라이브러리에서 외부 모듈로 불러들일 수 있는 {js객체}로 server측에서 미들웨어에 끝나기 전 취할 응답(response)들에 해당하는 메서드를 담고 있음
+               -> 미들웨어 코드를 마무리 짓고, client를 화면으로 보내기 위해서는 반드시 작성해야 함
+
+                   1) next()
+                       : client를 요청한 URL에 해당하는 API를 실행하거나, 화면으로 보내줌 (= 통과시켜줌)
+    
+                   2) redirect('URL명')
+                       : client를 'URL명'에 해당하는 페이지로 강제로 보내고, 페이지를 새로고침하여 주소창까지 바꿈
+    
+                   3) rewrite('URL명')
+                       : client를 'URL명'에 해당하는 페이지로 강제로 보내되, 주소창을 바꾸지 않고 그냥 rerendering해줌
+
+     @ middleware.js를 통해 구현 가능한 예시
+
+       ex1) 특정 페이지 접속하는 놈들 기록하는 기능
+
+            import { NextResponse } from 'next/server'
+            
+            export async function middleware(request) {
+  
+              if (request.nextUrl.pathname == '/list') {
+  
+                console.log(new Date().toLocaleString())
+                console.log(request.headers.get('sec-ch-ua-platform'))
+  
+                return NextResponse.next()
+              }
+            } 
+
+       ex2) Next-auth를 이용한 로그인 안 된 유저는 /write 페이지 접속 못하게 막기
+             -> 사전준비로 NEXTAUTH_SECRET 환경변수에 값을 넣어야 함
+
+                import { NextResponse } from 'next/server';
+                import { getToken } from "next-auth/jwt";
+                
+                export async function middleware(request) {
+                
+                  if (request.nextUrl.pathname.startsWith('/write')) {
+     
+                    const session = await getToken({ req : request })
+                    console.log('세션', session)
+     
+                    if (session == null) {
+                      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+                    }
+                  }
+                } 
+
+       ex3) 특정페이지 접속시 쿠키를 만들어보자 
+
+           import { NextResponse } from 'next/server';
+
+           export async function middleware(request) {
+           
+             request.cookies.get('쿠키이름')  //출력
+             request.cookies.has('쿠키이름')  //존재확인
+             request.cookies.delete('쿠키이름')  //삭제
+             
+             const response = NextResponse.next()
+             response.cookies.set({
+               name: 'mode',
+               value: 'dark',
+               maxAge: 3600,
+               httpOnly : true
+             })  
+             
+             return response  //쿠키생성
+           } 
 
 
 - Auth.js (Next-Auth 라이브러리)
