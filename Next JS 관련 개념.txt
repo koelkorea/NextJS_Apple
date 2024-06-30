@@ -1291,9 +1291,13 @@
                        2) SEO(Search Engine Optimization)에 유리하여, 검색엔진에 노출이 쉬움
   
                    -> (단점)
-                       : component의 반환되는 html 안에 react에서 통용되는 JSX문법을 사용할 수 없음 
-                         (= 쉽게말해 react를 전혀 쓸 수 없으므로, useState, useEffect, onClick 이런 거 사용X)
-  
+                       1) component의 반환되는 html 안에 react에서 통용되는 JSX문법을 사용할 수 없음 
+                          (= 쉽게말해 react를 전혀 쓸 수 없으므로, useState, useEffect, onClick 이런 거 사용X)
+
+                       2) 브라우저의 localStorage, sessionStorage 관련된 기능을 사용할 수 없기에 개발이 좀 불편하게 됨
+                           -> 그런 이유로 server측에서도 매번 값을 받을 수 있는 cookie를 사용하게 됨
+                               -> Next.js에서는 headers 라이브러리에서 제공한 cookies()라는 메서드로 현재 client측에 저장된 쿠키들의 정보를 {js객체} 형식으로 불러올 수 있고, get('쿠키명') 메서드로 값을 가져올 수 있음
+                         
                 @ (참고) server conponent에서 console.log()를 입력한다면?
                     : 해당 코드를 실행하는 주체는 서버의 JS 런타임 환경인 node.js이니, 터미널에서 확인이 가능함
                        (= NEXT.JS에서 작성한 API route의 경우도 같은 원칙을 공유하는 server component 기반이라는거 기억해야..)
@@ -1314,7 +1318,25 @@
                               : DOM을 직접 조작하는게 아닌, VDOM 로직으로 다른 부분만 다시 랜더링하는 react 기반 프론트엔드 라이브러리에서 사실상 이벤트핸들러 사용법은 이게 유일
   
                           2) 새로고침이 강제되지 않는 페이지를 만드는 것이 가능하기에, Ajax 방식의 API호출과 시너지가 우수한 편
+
+                          3) 브라우저의 localStorage, sessionStorage 관련된 기능을 사용할 수 있기에 편리
+                              -> BUT! Next.js에서는 client component의 경우도 server측에서 일부 관여를 하기 때문에... 현재 해당 코드를 보는 주체가 브라우저인지 서버인지는 narrowing 처리는 해줘야 에러 가능성이 없음
+
+                                 ex) if (typeof window != 'undefined') 라는 조건문을 통해, Next.js에서의 localStorage 사용시 안전성을 확인 가능
   
+                                     'use client'
+                                     
+                                     function 컴포넌트(){
+                                     
+                                       useEffect(()=>{
+                                           if (typeof window != 'undefined') {
+                                             let res = localStorage.setItem('이름', 'kim')
+                                           }
+                                       },[])
+                                     
+                                       return (생략)
+                                     } 
+
                    -> (단점)
                        : 웹페이지 상의 모든 동작과 이벤트를 Client 측에서 새로고침 없이 비동기적으로 처리하는 CSR 방식의 근본적인 문제에 직면
   
@@ -1934,6 +1956,228 @@
                         c. (라이브러리에 따라서는) POST 방식을 쓸 수도 있지만, 기본적으로 URL에 데이터를 포함해서 보내기에 보안이 씹망
 
 
+    # (참고) Next.js에서 무언가를 어떻게 구현할 것인가?
+        : 다크모드 제작을 예시로 들어보겠음
+
+          1. react 라이브러리의 정석대로 component에 state객체요소를 만들고, 거기에 다크모드 스위치 값을 넣고 조건식으로 변경하여 component에 변화를 줌
+              -> BUT! state객체는 새로고침하면, 초기값으로 초기화 되어있음... 
+                 (= 새로고침하면, 다크모드가 풀림)
+
+          2. DB에 다크모드 여부를 영구저장
+              -> 이러면, DB서버에 요청이 많아져 트래픽이 늘어남..
+
+          3. localStorage를 사용하기
+              -> 이 경우, 구현은 가능하지만.. CSR 방식에서만 사용가능한 특성 상, rendering 과정이나 localStorage 값을 꺼내고 사용하는 방식이 복잡해질 수 있음
+                  1) useEffect(콜백함수)를 사용하게 되니, rendering이 끝나고 뒤늦게 다크모드가 적용되는 모양새...
+                  2) localStorage의 경우, client 측의 브라우저 측에서 작동되는 코드.. 
+                     (= server의 API내용에는 사용 불가하며, client compoenent에 쓸 때도 window객체를 가지고 있는 브라우저에서만 발견되게 조건문으로 감싸야 함)
+
+                     ex) typeof window에 뭔 값이라도 있음 = 브라우저라는 말이니, 그럴 때만 localStorage코드가 발견되게 해야 함
+                     
+                         'use client'
+
+                         function 컴포넌트(){
+                         
+                           useEffect(()=>{
+                               if (typeof window != 'undefined') {
+                                 let res = localStorage.setItem('이름', 'kim')
+                               }
+                           },[])
+                         
+                           return (생략)
+                         } 
+
+          4. cookie를 사용하기
+              -> client - server 요청, 응답 간 항상 전달됨 + client나 server 어디서나 cookie에 접촉이 가능함
+
+                 ex) layout.js에 cookie를 가지고 오는 cookie 변수에 따라 class 속성값의 탈부착되게 제작... 
+
+                     import { cookies } from 'next/headers'
+       
+                     export default async function RootLayout({ children }) {
+                       let cookie = cookies().get('mode')
+                       
+                       return (
+                         <html lang="en">
+                           <body className={
+                             ( (cookie != undefined) && (cookie.value == 'dark') ) ? 'dark-mode' : ''
+                           }>
+                             <div className="navbar"> 
+                               <Link href="/" className="logo">Appleforum</Link> 
+                               <Link href="/list">List</Link> 
+                               <RegisterBtn/>
+                               <span>
+                                 {session ?  
+                                   <LogoutBtn/> : <LoginBtn/> }
+                               </span>
+                               <DarkMode/>
+                             </div>  
+                             {children}
+                           </body>
+                         </html>
+                       )
+                     } 
+
+                 ex) <DarkMode/> 컴포넌트에서 document.cookie에 기록된 cookie들을 잘라서, mode라는 키에 저장된 cookie값을 도출하여 그 값에 따라 아이콘이나 이벤트의 내용이 narrow될 수 있도록 함
+
+                      'use client'
+
+                      import { useRouter } from "next/navigation"
+                      import { useEffect } from "react"
+                      
+                      export default function DarkMode(){
+
+                        let 쿠키값 = ('; ' + document.cookie).split(`; mode=`).pop().split(';')[0];
+                        let router = useRouter()
+                      
+                        useEffect(()=>{
+
+                          if (쿠키값 == '') {
+                            document.cookie = 'mode=light; max-age=' + (3600 * 24 * 400)
+                          }
+                        },[])
+                      
+                        return (
+                          <span onClick={()=>{ 
+
+                            if (쿠키값 == 'light') {
+                              document.cookie = 'mode=dark; max-age=' + (3600 * 24 * 400)
+                              router.refresh()
+
+                            } else {
+                              
+                              document.cookie = 'mode=light; max-age=' + (3600 * 24 * 400)
+                              router.refresh()
+                            }
+                           }}> { (쿠키값 == 'light') ? '☀️' : '🌙' }</span> 
+                        )
+                      } 
+
+    # Next.js의 신기능 Server actions
+       : API에 'API명.JS' 작성할 필요없이, 현재 page.js에서 API 내용까지 한꺼번에 작성이 가능하게 한 Next.js 13.4 버전 이후부터 사용가능한 신기능
+          -> (결론) API영역과 파일을 따로 만들어서 관리할 필요가 전혀 없음... php, jsp 시절 쓰던 방식이 다시 유행이 돌아왔다 정도로 해석
+
+     @ 사전점검
+        1. package.json 파일 열어서 'next' 부분 버전숫자가 13.4.0 인지 확인 필요.. 
+            -> 만약 아니라면 직접 13.4.0 혹은 그 이상으로 수정하고 저장하고 터미널 열어서 npm install 입력
+
+        2. next 버전이 14.0.0 이하라면? next.config.js에서 다음과 같은 속성 추가
+            -> experimental: {
+                 serverActions: true,
+               },
+
+     @ Server actions 사용법
+        1. server compoenent에서 사용
+          
+           1) 원하는 URL위치에 해당하는 폴더에 page.js를 만들고, functional compoenent에 <form>태그를 포함해서 반환
+           2) functional compoenent 내부에 parameter를 가진 비동기 함수를 제작하고, 함수 {} 최상단에 'use server'를 붙임
+               -> (중요) 어차피 server compoenent는 SSR방식이니 API내용은 노출되지 않음
+               -> 해당 함수의 parameter는 1)에서 제작한 <form>태그에서 받은 데이터가 될 예정 
+               -> 'use server'의 의미
+                    : 해당 함수 {} 안의 내용은 서버 API에 해당한다는 것을 의미해주는 키워드로 서버코드에 해당
+                      (= 자동으로 client측에서 해당 함수를 호출시 서버의 API로서 작동하게 만들어 줌 )
+
+           3) <form> 태그의 호출할 URL를 작성할 action속성에 URL이 아닌 {2)에서 제작한 함수명}을 넣으면 완성
+               -> (참고) <form>태그 안에만 있으면, <button>, <input> 안에서 formAction 속성 열어서 작성해도 됨
+
+           4) (참고) server compoenent에서 SPA처럼 변경점이 생겼을 때, 자동 새로고침이 반영되는 이쁜 페이지처럼 보이게 하고 싶다면?
+                : next.JS에서 cache 분야 라이브러리에서 기본 지원하는 revalidatePath('URL명'), revalidateTag('컴포넌트명')을 API내용에 사용해주면, server에서 VDOM마냥 차이점에 해당하는 부분만 새로고침해줌
+                   -> revalidatePath('URL명')
+                       : 해당 /URL에 있던 캐시를 삭제하고 생성해주고, 페이지를 다시 로드해 줌
+                          -> BUT! 캐시 생성시 과거와 현재의 차이점이 보이면, 바뀐 부분만 다시 페이지 로드시 다시 로딩해주기에 성능면이나 UX면이나 참 여러모로 좋음
+
+                   -> revalidateTag('컴포넌트명')
+                       : revalidatePath와 비슷하나, 대상이 component임
+
+           ex) server compoenent에서 server Actions 사용시 예시코드
+           
+               import { connectDB } from "@/util/database";
+               import { revalidatePath } from "next/cache" //페이지 상단에 추가
+
+               export default async function Write2() {
+
+                 //DB에서 데이터 뽑아서 보여주기 
+                 const db = (await connectDB).db('forum')
+                 let result = await db.collection('post_test').find().toArray()
+
+                 async function handleSubmit(formData) {
+
+                   'use server';
+
+                   const db = (await connectDB).db('forum')
+                   await db.collection('post_test').insertOne({title : formData.get('title')})
+                   revalidatePath('/write2')
+                 }
+                
+                 return (
+                   <form action={handleSubmit}>
+                     <input type="text" name="title" />
+                     <button type="submit">Submit</button>
+                     {
+                       result ? result.map((a)=>
+                         <p>글제목 : {a.title}</p>
+                       )
+                       : null
+                     }
+                   </form>
+                 )
+               } 
+
+        2. client compoenent에서 사용
+            : server때와 비슷하지만, 서버 API에 해당하는 함수 부분을 보안 문제로 인해, 여전히 분리시켜야 하며, 외부 모듈 형식으로 가져와서 쓴다는게 특징
+               -> BUT! VDOM의 원리로 인해, 화면에 변경사항이 자동으로 반영되는 부분은 좋긴 함
+          
+           1) 원하는 URL위치에 해당하는 폴더에 page.js를 만들고, 최상단에 'use client'를 적은 뒤, functional compoenent에 <form>태그를 포함해서 반환
+           2) page.js가 위치한 폴더에, API에 해당하는 parameter를 가진 비동기 함수 형식의 funcional compoenent를 제작하고, export 키워드와 파일 최상단에 use server'를 붙임
+               -> (중요) API에 해당하는 compoenent를 외부 모듈 형식으로 작성하는 이유는 client compoenent 내부에 적으면 client측에 API 코드를 넘겨주는 꼴이기 때문
+               -> 'use server'의 의미
+                    : 해당 함수 {} 안의 내용은 서버 API에 해당한다는 것을 의미해주는 키워드로 서버코드에 해당
+                      (= 자동으로 client측에서 해당 함수를 호출시 서버의 API로서 작동하게 만들어 줌)
+
+           3) page.js에서 사용할 server actions 함수를 모듈형식으로 import함
+           4) <form> 태그의 호출할 URL를 작성할 action속성에 URL이 아닌 {2)에서 제작한 함수명}을 넣으면 완성
+               -> (참고) <form>태그 안에만 있으면, <button>, <input> 안에서 formAction 속성 열어서 작성해도 됨
+           4) 만약 state객체나 props객체까지 만지는게 귀찮은데, 새로고침을 하고 싶다면 router.refresh()를 말미에 작성하기
+
+
+           ex) client compoenent에서 server Actions 사용시 page.js 예시코드
+           
+               'use client'
+
+               import { connectDB } from "@/util/database";
+               import { handleSubmit } from './action'
+
+               export default async function Write2() {
+
+                 //DB에서 데이터 뽑아서 보여주기 
+                 const db = (await connectDB).db('forum')
+                 let result = await db.collection('post_test').find().toArray()
+                
+                 return (
+                   <form action={handleSubmit}>
+                     <input type="text" name="title" />
+                     <button type="submit">Submit</button>
+                     {
+                       result ? result.map((a)=>
+                         <p>글제목 : {a.title}</p>
+                       )
+                       : null
+                     }
+                   </form>
+                 )
+               } 
+
+           ex) client compoenent에서 server Actions 사용시 API파트의 예시코드
+
+               'use server'
+
+               export async function handleSubmit(formData) {
+                
+                 const db = (await connectDB).db('forum')
+                 await db.collection('post_test').insertOne({title : formData.get('title')})
+               }
+
+
     # Next.js에서 미들웨어(middleware) 기능 제작하는 용도의 middleware.js
 
      @ 미들웨어(middleware)
@@ -1944,40 +2188,29 @@
 
      @ middleware.js 제작 및 사용법
         : app 폴더에 middleware.js를 만들고, funcional compoenent를 만들어서 미들웨어(middleware)의 내용을 입력하면 끝
+           -> 거기에 request정보를 얻을 수 있는 정보들을 단서로 조건문을 통해, 원하는 request에 대응하는 미들웨어 내용만 실행하는 것도 가능함 
 
+     @ middleware.js 제작시 사용 가능한 {js객체} request, NextResponse
+     
           ex) import { NextResponse } from 'next/server'
 
               export async function middleware(request) {
+
+                // request객체의 대표적 프로퍼티
                 console.log(request.nextUrl)  //유저가 요청중인 URL 출력해줌
                 console.log(request.cookies)  //유저가 보낸 쿠키 출력해줌
                 console.log(request.headers)  //유저의 headers 정보 출력해줌 
-                NextResponse.next()  //통과
-                NextResponse.redirect()  //다른페이지 이동
-                NextResponse.rewrite()  //다른페이지 이동
+
+                // NextResponse 객체의 대표적 메서드들.. 응답시 client에 보낼 객체를 반환함
+                //  -> 해당 응답객체를 보내고 싶으면, return에 해당 값을 넣어주면 됨
+                NextResponse.next()        // client측의 요청을 받아들이는 의미의 응답객체 반환 (= 통과)
+                NextResponse.redirect(url) // 다른페이지 이동 + 새로고침까지 하라는 응답객체 반환
+                NextResponse.rewrite(url)  // 다른페이지 이동 + 재랜더링만 하라는 응답객체 반환
               } 
 
-     @ middleware.js 제작시 사용 가능한 {js객체} request, NextResponse
-
-        1. request
-            : middleware.js 파일의 funcional component의 parameter로 기입 가능한 {js객체}로 API를 요청한 client측의 정보를 property로 담고 있음
-
-               1) nextUrl
-                   : client측에서 요청한 서버의 URL에 관련된 {JS객체} 출력
-                      -> pathname
-                           : client가 요청한 URL을 담는 property
-                             (String.startwith('문자열')과 함께하면, SQL의 LIKE 연산자를 통한 시작문자 기준으로 URL을 검증하고 boolean 값으로 반환 받을 수 있음)
-
-               2) cookies
-                   : client측에서 보낸 쿠키 내용 출력
-
-               3) headers
-                   : client측에서 보낸 headers 정보 출력
-                     
-                     ex) 이전 방문 페이지, 사용하는 OS, 사용하는 브라우저, 언어, IP 등
-
-        2. NextResponse 
+        1. NextResponse 
             : Next js에서 제공하는 next/server 라이브러리에서 외부 모듈로 불러들일 수 있는 {js객체}로 server측에서 미들웨어에 끝나기 전 취할 응답(response)들에 해당하는 메서드를 담고 있음
-               -> 미들웨어 코드를 마무리 짓고, client를 화면으로 보내기 위해서는 반드시 작성해야 함
+               -> (중요) 미들웨어 코드를 마무리 짓고, client를 화면으로 보내기 위해서는 반드시 작성해야 함... return값에 적어도 해당 메서드의 반환값을 넣어둬야 middleware가 마무리
 
                    1) next()
                        : client를 요청한 URL에 해당하는 API를 실행하거나, 화면으로 보내줌 (= 통과시켜줌)
@@ -1988,62 +2221,93 @@
                    3) rewrite('URL명')
                        : client를 'URL명'에 해당하는 페이지로 강제로 보내되, 주소창을 바꾸지 않고 그냥 rerendering해줌
 
-     @ middleware.js를 통해 구현 가능한 예시
+        2. request
+            : middleware.js 파일의 funcional component의 parameter로 기입 가능한 {js객체}로 API를 요청한 client측의 정보를 property로 담고 있음
 
-       ex1) 특정 페이지 접속하는 놈들 기록하는 기능
+               1) nextUrl
+                   : client측에서 요청한 서버의 URL에 관련된 {JS객체} 출력
+                      -> nextUrl.pathname
+                           : client가 요청한 URL을 담는 property
+                             (String.startwith('문자열')과 함께하면, SQL의 LIKE 연산자를 통한 시작문자 기준으로 URL을 검증하고 boolean 값으로 반환 받을 수 있음)
 
-            import { NextResponse } from 'next/server'
-            
-            export async function middleware(request) {
-  
-              if (request.nextUrl.pathname == '/list') {
-  
-                console.log(new Date().toLocaleString())
-                console.log(request.headers.get('sec-ch-ua-platform'))
-  
-                return NextResponse.next()
-              }
-            } 
+                             ex) Next-auth를 이용한 로그인 안 된 유저는 /write 페이지 접속 못하게 막기
+                                  -> 사전준비로 NEXTAUTH_SECRET 환경변수에 값을 넣어야 함
+                                  -> next-auth/jwt 라이브러리의 getToken({ req : request }) 함수는 현재 로그인한 유저의 정보를 출력할 수 있음
+                      
+                                     import { NextResponse } from 'next/server';
+                                     import { getToken } from "next-auth/jwt";
+                                     
+                                     export async function middleware(request) {
+                                     
+                                       if (request.nextUrl.pathname.startsWith('/write')) {
+                           
+                                         const session = await getToken({ req : request })
+                                         console.log('세션', session)
+                           
+                                         if (session == null) {
+                                           return NextResponse.redirect(new URL('/api/auth/signin', request.url));
+                                         }
+                                       }
+                                     } 
 
-       ex2) Next-auth를 이용한 로그인 안 된 유저는 /write 페이지 접속 못하게 막기
-             -> 사전준비로 NEXTAUTH_SECRET 환경변수에 값을 넣어야 함
+               2) cookies
+                   : client측에서 보낸 쿠키 내용 출력
+                      -> cookies.get('쿠키이름')    : 해당 쿠키 정보 출력
+                      -> cookies.has('쿠키이름')    : 해당 쿠키 정보 존재 확인
+                      -> cookies.delete('쿠키이름') : 해당 쿠키 삭제
+                      -> NextResponse응답객체.cookies.set({JS객체})
+                           : NextResponse로 보내는 페이지에 보낼 쿠키를 parameter인 {JS객체}에 넣어둔 정보대로 새롭게 제작
+                              - name : 이름
+                              - value : 값
+                              - maxAge : 수명
+                              - httpOnly : 쿠키정보를 client가 자바스크립트로 맘대로 조작 가능 여부를 boolean값으로 설정
+                              
+                          ex) 특정페이지 접속시 쿠키를 만들어보자 
+                   
+                              import { NextResponse } from 'next/server';
+                   
+                              export async function middleware(request) {
+                              
+                                request.cookies.get('쿠키이름')  //출력
+                                request.cookies.has('쿠키이름')  //존재확인
+                                request.cookies.delete('쿠키이름')  //삭제
+                                
+                                // NextResponse객체 메서드를 통해, server측에서 client에 응답을 보내지만..
+                                const response = NextResponse.next()
+                                
+                                // 응답객체에 새로운 쿠키를 만들어서, 유저에게 보내줘야 하므로.. 바로 return하지 않음
+                                response.cookies.set({
+                                  name: 'mode',
+                                  value: 'dark',
+                                  maxAge: 3600,
+                                  httpOnly : true
+                                })  
+                                
+                                //쿠키생성
+                                return response  
+                              } 
 
-                import { NextResponse } from 'next/server';
-                import { getToken } from "next-auth/jwt";
-                
-                export async function middleware(request) {
-                
-                  if (request.nextUrl.pathname.startsWith('/write')) {
-     
-                    const session = await getToken({ req : request })
-                    console.log('세션', session)
-     
-                    if (session == null) {
-                      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
-                    }
-                  }
-                } 
-
-       ex3) 특정페이지 접속시 쿠키를 만들어보자 
-
-           import { NextResponse } from 'next/server';
-
-           export async function middleware(request) {
-           
-             request.cookies.get('쿠키이름')  //출력
-             request.cookies.has('쿠키이름')  //존재확인
-             request.cookies.delete('쿠키이름')  //삭제
-             
-             const response = NextResponse.next()
-             response.cookies.set({
-               name: 'mode',
-               value: 'dark',
-               maxAge: 3600,
-               httpOnly : true
-             })  
-             
-             return response  //쿠키생성
-           } 
+               3) headers
+                   : client측에서 보낸 메타 데이터에 해당하는 headers 정보(이전 방문 페이지, 사용하는 OS, 사용하는 브라우저, 언어, IP 등) 출력                         
+                      -> headers.get(프로퍼티명)
+                          : client측에서 보낸 메타 데이터 중 원하는 프로퍼티의 데이터를 뺄 수 있는 메서드
+              
+                            ex) 특정 페이지 접속하는 놈들 기록하는 기능
+                                  -> nextUrl.pathname을 통해 알 수 있는 client의 요청 URL을 조건문에 사용
+                                  -> headers.get('sec-ch-ua-platform')을 통해 현재 유저의 OS정보를 알 수 있음
+      
+                                     import { NextResponse } from 'next/server'
+                                     
+                                     export async function middleware(request) {
+                            
+                                       if (request.nextUrl.pathname == '/list') {
+                            
+                                         console.log(new Date().toLocaleString())
+                                         console.log(request.headers.get('sec-ch-ua-platform'))
+                            
+                                         return NextResponse.next()
+                                       }
+                                     } 
 
 
 - Auth.js (Next-Auth 라이브러리)

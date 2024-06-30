@@ -1,0 +1,77 @@
+- localStorage & sessionStorage & cookies
+   : 웹 브라우저에서 데이터를 저장하는 데 사용되는 옵션들
+     (= 서버가 아닌 client 쪽에 저장해서 사용할 로직과 이에 필요한 데이터를 저장하는 공간)      
+
+    # localStorage & sessionStorage & cookies 공통 특징
+       1) 문자열만 저장 가능
+       2) key, value 형식 저장
+       3) 수정 불가 (= 삭제 후 생성 다시 해야..)   
+
+    # localStorage & sessionStorage & cookies 차이점
+       1) 데이터 수명
+           - localStorage   : 사용자가 정리하기 전까지 유지
+           - sessionStorage : 사용자와의 현재 세션이 유지되는 동안만 유지 (= 탭이나 브라우저 종료되면 삭제)      
+           - cookies        : 사용자가 정리하기 전까지 유지 (= 생성시 정해지기도 함)
+
+       2) 접근 범위
+           - localStorage   : 동일한 도메인(사이트) 내의 모든 웹 페이지에서 공유됨 (= 그 이외의 웹페이지에서는 참고 불가)
+           - sessionStorage : 사용자와의 현재 세션이 유지되는 동안 모든 탭 간에 공유가 가능      
+           - cookies        : 동일한 도메인(사이트) 내의 모든 웹 페이지에서 공유됨 (= 그 이외의 웹페이지에서는 참고 불가)
+
+       3) 용도
+           - localStorage   : 지속적인 상태 정보 (ex : 유저 설정, 로그인 정보)
+           - sessionStorage : 임시 정보 (ex : 장바구니 정보)     
+           - cookies        : 지속적인 상태 정보 중 서버 측에 request시 이를 매번 보내고, 이를 바탕으로 API내용이 변경되는 경우에 해당하는 정보 (ex : 다크 모드 설정 여부)
+                              (= client 측에 화면 rendering 하기전에, 서버측에서 인지하고 다르게 처리할 필요가 있는 데이터의 경우 해당)
+       4) 저장 크기
+           - localStorage   : 도메인(사이트)마다 5MB
+           - sessionStorage : 20MB      
+           - cookies        : 도메인 1개당 최대 50개, 총합 4kb까지의 문자데이터를 저장
+
+    # localStorage & sessionStorage 메서드
+
+      - localStorage & sessionStorage.setItem(key값, value값)
+         : 브라우저의 localStorage 항목에 key, value를 저장하기 위한 localStorage 객체의 내부함수  
+
+      - localStorage & sessionStorage.getItem(key값)
+         : 브라우저의 localStorage 항목의 해당 key에 있는, value를 추출 위한 localStorage 객체의 내부함수    
+
+      - localStorage & sessionStorage.removeItem(key값)
+         : 브라우저의 localStorage 항목에 해당 key에 해당하는 key, value를 삭제 위한 localStorage 객체의 내부함수     
+
+    # cookies 메서드
+
+      a. client 화면 측에서 쓸 수 있는 cookies 메서드
+      
+          - document.cookie = '쿠키명=값; max-age=초단위시간'
+             : 브라우저의 cookies 항목에 해당 쿠키명에 해당하는 정보들을 저장하기 위한 document객체의 프로퍼티 cookie
+                -> (참고)
+                    1) 크롬에선 쿠키 유효기간으로 최대 400일까지만 넣을 수 있음 
+                    2) 유효기간 안넣는 경우 브라우저 종료시 쿠키는 자동삭제
+                    3) ; 기호로 프로퍼티를 구분
+
+      b. server측에서 쓰는 cookies 메서드 (next.js나 node.js 사용시 관련 라이브러리 참고)
+      
+          - cookies().get('쿠키명')
+             : next.js 사용 시, header 관련 라이브러리에서 지원하는 cookie객체를 생성하는 메서드 cookies()에서 해당 쿠키명에 해당하는 정보들을 출력하기 위한 메서드 체이닝
+ 
+- JSON 전역 객체
+   : JS에서 JavaScript Object Notation(JSON)을 분석하거나 값을 JSON으로 변환하는 메서드를 가지는 전역객체  
+
+    # JavaScript Object Notation(JSON)
+       : Javascript 객체 문법을 따르는 문자열 기반의 데이터 포맷으로.. 베이스가 된 문법이 JS의 object일뿐 어디서나 쓸수 있는 범용적 데이터 포맷
+          -> JSON의 특성
+             1) JSON은 순수히 데이터 포맷 (= 멤버변수 O , 메서드 X)
+             2) 프로퍼티와 값을 구분시, 큰 따옴표("") 만 사용해서 구분할 수 있음
+             3) JSON은 '문자열'로서 JSON은 그 전체에 해당하며, 이를 파싱(paring)하여 JS Object로 쓸 수 있게 변환함
+                (= JSON 형식 데이터 그 자체로는 JS object 마냥 객체명.프로퍼티명 or 객체명['프로퍼티명']; 이런식으로 쓸 수 없음)      
+
+    # JSON 메서드
+      - JSON.stringify(array/object 변수)
+         : paramter의 array/object -> JSON 변환하여 문자열로서 저장 가능하게 하는 JSON 객체의 내부 함수
+            -> 선택 사항으로 특정 속성만 포함하거나, 사용자 정의 방식으로 속성을 대체 가능      
+            
+      - JSON.parse(JSON 형식 구문)
+         : paramter의 JSON 형식 문자열을 JSON으로서 구문 분석하여, JSON구문 -> array/object나 숫자 문자 반환
+            -> 선택적으로 분석 결과의 값과 속성을 변환해 반환
+                -> BUT! object의 함수는 받아주지 못함
